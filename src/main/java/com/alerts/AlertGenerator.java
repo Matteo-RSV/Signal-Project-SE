@@ -9,44 +9,51 @@ import com.data_management.Patient;
  * relies on a {@link DataStorage} instance to access patient data and evaluate
  * it against specific health criteria.
  */
+
 public class AlertGenerator {
-    private DataStorage dataStorage;
 
+    //Marked the field as final because it is assigned only once in the constructor (private DataStorage dataStorage -> private final DataStorage dataStorage)
+    private final DataStorage dataStorage;
+
+    // Updated the Javadoc for clarity and readability in line with the Google Java Style Guide
     /**
-     * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}.
-     * The {@code DataStorage} is used to retrieve patient data that this class
-     * will monitor and evaluate.
+     * Constructs an {@code AlertGenerator} with the specified {@code DataStorage}.
      *
-     * @param dataStorage the data storage system that provides access to patient
-     *                    data
+     * @param dataStorage the data storage system that provides access to patient data
      */
+    
     public AlertGenerator(DataStorage dataStorage) {
+
         this.dataStorage = dataStorage;
+
     }
 
+    // Updated the Javadoc link to reference the full method signature more clearly ({@link #triggerAlert(Alert)})
     /**
-     * Evaluates the specified patient's data to determine if any alert conditions
-     * are met. If a condition is met, an alert is triggered via the
-     * {@link #triggerAlert}
-     * method. This method should define the specific conditions under which an
-     * alert
-     * will be triggered.
+     * Evaluates the specified patient's data to determine whether alert conditions are met.
+     * If a condition is met, an alert is triggered via {@link #triggerAlert(Alert)}.
      *
-     * @param patient the patient data to evaluate for alert conditions
+     * @param patient the patient whose data is evaluated for alert conditions
      */
+    
     public void evaluateData(Patient patient) {
-        // Implementation goes here
+
+        // Replaced the previous vague placeholder comment with a clearer implementation one
+        // Placeholder for future alert-condition evaluation logic
+
     }
 
+    // Updated the Javadoc for clarity and readability in line with the Google Java Style Guide
     /**
-     * Triggers an alert for the monitoring system. This method can be extended to
-     * notify medical staff, log the alert, or perform other actions. The method
-     * currently assumes that the alert information is fully formed when passed as
-     * an argument.
+     * Triggers an alert for the monitoring system.
      *
      * @param alert the alert object containing details about the alert condition
      */
+    
     private void triggerAlert(Alert alert) {
-        // Implementation might involve logging the alert or notifying staff
+
+        // Replaced the previous vague placeholder comment with a clearer implementation one
+        // Placeholder for future alert handling logic , such as logging or notification
+
     }
 }
