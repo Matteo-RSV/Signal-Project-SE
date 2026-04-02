@@ -7,15 +7,27 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Implementation of {@link OutputStrategy} that writes simulated patient data to files.
+ *
+ * <p>This class stores output in text files within a specified base directory.
+ * Each type of data (label) is written to a separate file. Data is appended
+ * to the file if it already exists.
+ */
 public class FileOutputStrategy implements OutputStrategy {
 
-    //Renamed the field to camelCase to follow the correct java style: BaseDirectory -> baseDirectory
+    // Renamed the field to camelCase to follow the correct java style: BaseDirectory -> baseDirectory
     private String baseDirectory;
 
     // Renamed the field to camelCase to follow the correct java style: file_map -> fileMap 
     // Reduced the field's visibility to private (public -> private) to improve encapsulation and follow the java style for best practices
     private final ConcurrentHashMap<String, String> fileMap = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a file-based output strategy using the specified directory.
+     *
+     * @param baseDirectory the directory where output files will be created and stored
+     */
     public FileOutputStrategy(String baseDirectory) {
 
         // Updated constructor assignment to match the corrected camelCase field name (baseDirectory)
@@ -23,6 +35,17 @@ public class FileOutputStrategy implements OutputStrategy {
 
     }
 
+    /**
+     * Outputs patient data by writing it to a file corresponding to the data label.
+     *
+     * <p>If the output directory does not exist, it will be created. Each label
+     * is associated with a specific file, and data is appended to that file.
+     *
+     * @param patientId the unique identifier of the patient
+     * @param timestamp the time at which the data was generated
+     * @param label the type of data (e.g., ECG, blood pressure)
+     * @param data the generated data value formatted as a string
+     */
     @Override
     public void output(int patientId, long timestamp, String label, String data) {
 
