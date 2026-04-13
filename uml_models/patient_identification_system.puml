@@ -3,26 +3,30 @@ skinparam classAttributeIconSize 0
 title CHMS Patient Identification System
 
 class PatientIdentifier {
-  - identityManager: IdentityManager
-  + matchIncomingIdentity(externalId: String, demographics: DemographicProfile): MatchResult
-  + confirmPatient(patientId: String, wristbandCode: String): boolean
-  + raiseMismatch(matchResult: MatchResult): IdentityAnomaly
+  - minimumConfidence: double
+  + matchPatient(token: IdentifierToken, profile: DemographicProfile, candidates: List<HospitalPatient>): MatchResult
+  + compareProfile(profile: DemographicProfile, patient: HospitalPatient): double
+  + validateToken(token: IdentifierToken): boolean
 }
 
 class HospitalPatient {
   - patientId: String
+  - fullName: String
   - medicalRecordNumber: String
+  - medicalHistorySummary: String
   - admissionStatus: String
   - dateOfBirth: LocalDate
   + isActiveAdmission(): boolean
-  + getDisplayName(): String
+  + getClinicalSummary(): String
 }
 
 class IdentityManager {
-  - patientIndex: Map<String, HospitalPatient>
+  - patientRepository: PatientRepository
+  - identifier: PatientIdentifier
+  - accessPolicy: AccessPolicy
   - anomalies: List<IdentityAnomaly>
-  + findByPatientId(patientId: String): HospitalPatient
-  + searchCandidates(profile: DemographicProfile): List<HospitalPatient>
+  + resolveIdentity(token: IdentifierToken, profile: DemographicProfile): MatchResult
+  + getPatientInfo(patientId: String, requesterRole: String): HospitalPatient
   + recordAnomaly(anomaly: IdentityAnomaly): void
 }
 
@@ -39,15 +43,16 @@ class MatchResult {
   - matchStatus: String
   - matchedPatientId: String
   + isAccepted(threshold: double): boolean
-  + requiresReview(): boolean
+  + isAmbiguous(): boolean
 }
 
 class IdentityAnomaly {
   - anomalyId: String
-  - reason: String
+  - anomalyType: String
+  - details: String
   - detectedAt: Instant
   - severity: String
-  + assignForReview(userId: String): void
+  + assignForReview(teamId: String): void
   + close(resolutionNote: String): void
 }
 
@@ -55,17 +60,31 @@ class IdentifierToken {
   - tokenType: String
   - tokenValue: String
   - issuer: String
-  + isExpired(asOf: Instant): boolean
+  - issuedAt: Instant
+  + isTrusted(asOf: Instant): boolean
 }
 
-PatientIdentifier --> "1" IdentityManager : resolves through
-PatientIdentifier --> "1" DemographicProfile : compares
-PatientIdentifier --> "1" MatchResult : produces
-PatientIdentifier ..> "0..1" IdentifierToken : validates
-IdentityManager o-- "0..*" HospitalPatient : indexes
+class PatientRepository {
+  - patientIndex: Map<String, HospitalPatient>
+  + findCandidates(token: IdentifierToken, profile: DemographicProfile): List<HospitalPatient>
+  + findByPatientId(patientId: String): HospitalPatient
+}
+
+class AccessPolicy {
+  - rolePermissions: Map<String, Set<String>>
+  + canViewPatient(requesterRole: String, patientId: String): boolean
+  + maskPatient(patient: HospitalPatient): HospitalPatient
+}
+
+IdentityManager *-- "1" PatientIdentifier : uses
+IdentityManager --> "1" PatientRepository : retrieves from
+IdentityManager --> "1" AccessPolicy : authorizes via
 IdentityManager *-- "0..*" IdentityAnomaly : tracks
-HospitalPatient *-- "1" DemographicProfile : describes
-HospitalPatient o-- "1..*" IdentifierToken : assigned identifiers
-MatchResult --> "0..1" HospitalPatient : candidate match
+PatientRepository o-- "0..*" HospitalPatient : stores
+PatientIdentifier ..> "1" IdentifierToken : validates
+PatientIdentifier ..> "1" DemographicProfile : compares
+PatientIdentifier --> "1" MatchResult : produces
+MatchResult --> "0..1" HospitalPatient : matched patient
+HospitalPatient *-- "1" DemographicProfile : identity traits
 
 @enduml
