@@ -3,68 +3,82 @@ skinparam classAttributeIconSize 0
 title CHMS Data Storage System
 
 class DataStorage {
-  - patientDataSet: Map<String, PatientData>
+  - encryptedRecords: Map<String, List<PatientData>>
   - retentionPolicy: RetentionPolicy
-  - auditLog: List<AuditEntry>
-  + storeRecord(data: PatientData): void
-  + retrieveVersions(patientId: String, from: Instant, to: Instant): List<RecordVersion>
-  + deleteExpiredData(asOf: Instant): int
-  + encryptAtRest(): void
+  - auditEntries: List<AuditEntry>
+  + storeRecord(record: PatientData): void
+  + fetchRecords(patientId: String, from: Instant, to: Instant): List<PatientData>
+  + saveVersion(recordId: String, version: DataVersion): void
+  + purgeExpiredRecords(asOf: Instant): int
 }
 
 class PatientData {
+  - recordId: String
   - patientId: String
-  - classification: String
-  - encryptedPayload: String
-  - lastUpdated: Instant
-  + appendVersion(version: RecordVersion): void
-  + latestVersion(): RecordVersion
+  - metricType: String
+  - value: double
+  - unit: String
+  - recordedAt: Instant
+  + addVersion(version: DataVersion): void
+  + getLatestVersion(): DataVersion
 }
 
-class RecordVersion {
+class DataVersion {
   - versionNumber: int
-  - capturedAt: Instant
-  - checksum: String
-  - deleted: boolean
-  + markDeleted(reason: String): void
-  + verifyChecksum(): boolean
+  - revisedValue: double
+  - revisedBy: String
+  - revisedAt: Instant
+  - correctionReason: String
+  + isCurrent(): boolean
+  + supersedes(versionNumber: int): boolean
 }
 
 class DataRetriever {
   - storage: DataStorage
-  - accessPolicy: AccessPolicy
-  + getPatientHistory(requesterRole: String, patientId: String, from: Instant, to: Instant): List<RecordVersion>
-  + getLatestRecord(requesterRole: String, patientId: String): RecordVersion
+  - accessController: AccessController
+  + retrieveLatest(request: AccessRequest, patientId: String, metricType: String): PatientData
+  + retrieveHistory(request: AccessRequest, patientId: String, from: Instant, to: Instant): List<PatientData>
 }
 
-class AccessPolicy {
-  - allowedRoles: Set<String>
-  - minimumPurpose: String
-  + authorize(requesterRole: String, purpose: String): boolean
-  + maskIdentifiers(data: PatientData): PatientData
+class AccessController {
+  - rolePermissions: Map<String, Set<String>>
+  + authorize(request: AccessRequest, patientId: String, action: String): boolean
+  + filterForRole(record: PatientData, role: String): PatientData
 }
 
-class AuditEntry {
-  - entryId: String
+class AccessRequest {
+  - requesterId: String
   - requesterRole: String
-  - action: String
-  - recordedAt: Instant
-  + summarize(): String
+  - purposeOfUse: String
+  - requestedAt: Instant
+  + isEmergencyAccess(): boolean
 }
 
 class RetentionPolicy {
   - retentionDays: int
-  - legalHoldEnabled: boolean
-  + shouldDelete(version: RecordVersion, asOf: Instant): boolean
-  + placeLegalHold(patientId: String): void
+  - archiveBeforeDelete: boolean
+  - legalHoldPatients: Set<String>
+  + shouldArchive(record: PatientData, asOf: Instant): boolean
+  + shouldDelete(record: PatientData, asOf: Instant): boolean
 }
 
-DataStorage *-- "1..*" PatientData : stores
-PatientData *-- "1..*" RecordVersion : versions
+class AuditEntry {
+  - entryId: String
+  - requesterId: String
+  - action: String
+  - patientId: String
+  - recordedAt: Instant
+  + describe(): String
+}
+
+DataStorage *-- "0..*" PatientData : stores
+PatientData *-- "1..*" DataVersion : version history
 DataRetriever --> "1" DataStorage : queries
-DataRetriever --> "1" AccessPolicy : authorizes
-DataStorage o-- "0..*" AuditEntry : records access
+DataRetriever --> "1" AccessController : authorizes via
+DataRetriever --> "1" AccessRequest : uses
 DataStorage --> "1" RetentionPolicy : applies
-RetentionPolicy ..> "1..*" RecordVersion : evaluates
+DataStorage o-- "0..*" AuditEntry : records access
+AccessController ..> "1" AccessRequest : evaluates
+RetentionPolicy ..> "0..*" PatientData : governs lifecycle
 
 @enduml
