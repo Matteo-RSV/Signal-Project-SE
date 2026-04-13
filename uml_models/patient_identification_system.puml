@@ -1,0 +1,71 @@
+@startuml
+skinparam classAttributeIconSize 0
+title CHMS Patient Identification System
+
+class PatientIdentifier {
+  - identityManager: IdentityManager
+  + matchIncomingIdentity(externalId: String, demographics: DemographicProfile): MatchResult
+  + confirmPatient(patientId: String, wristbandCode: String): boolean
+  + raiseMismatch(matchResult: MatchResult): IdentityAnomaly
+}
+
+class HospitalPatient {
+  - patientId: String
+  - medicalRecordNumber: String
+  - admissionStatus: String
+  - dateOfBirth: LocalDate
+  + isActiveAdmission(): boolean
+  + getDisplayName(): String
+}
+
+class IdentityManager {
+  - patientIndex: Map<String, HospitalPatient>
+  - anomalies: List<IdentityAnomaly>
+  + findByPatientId(patientId: String): HospitalPatient
+  + searchCandidates(profile: DemographicProfile): List<HospitalPatient>
+  + recordAnomaly(anomaly: IdentityAnomaly): void
+}
+
+class DemographicProfile {
+  - fullName: String
+  - dateOfBirth: LocalDate
+  - sexAtBirth: String
+  - wardCode: String
+  + matches(patient: HospitalPatient): boolean
+}
+
+class MatchResult {
+  - confidenceScore: double
+  - matchStatus: String
+  - matchedPatientId: String
+  + isAccepted(threshold: double): boolean
+  + requiresReview(): boolean
+}
+
+class IdentityAnomaly {
+  - anomalyId: String
+  - reason: String
+  - detectedAt: Instant
+  - severity: String
+  + assignForReview(userId: String): void
+  + close(resolutionNote: String): void
+}
+
+class IdentifierToken {
+  - tokenType: String
+  - tokenValue: String
+  - issuer: String
+  + isExpired(asOf: Instant): boolean
+}
+
+PatientIdentifier --> "1" IdentityManager : resolves through
+PatientIdentifier --> "1" DemographicProfile : compares
+PatientIdentifier --> "1" MatchResult : produces
+PatientIdentifier ..> "0..1" IdentifierToken : validates
+IdentityManager o-- "0..*" HospitalPatient : indexes
+IdentityManager *-- "0..*" IdentityAnomaly : tracks
+HospitalPatient *-- "1" DemographicProfile : describes
+HospitalPatient o-- "1..*" IdentifierToken : assigned identifiers
+MatchResult --> "0..1" HospitalPatient : candidate match
+
+@enduml

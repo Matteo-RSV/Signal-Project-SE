@@ -1,0 +1,9 @@
+# Data Storage System
+
+The storage model is designed around controlled persistence rather than simple file dumping. `DataStorage` is the subsystem boundary and is responsible for secure storage, retrieval support, retention enforcement, and audit generation. The core domain object is `PatientData`, which represents the protected record set for one patient. Each record set is versioned through composition with `RecordVersion`, allowing the system to retain a history of changes, support traceability, and distinguish current data from older or logically deleted entries.
+
+`DataRetriever` exists as a separate access path so that read operations are policy-driven instead of directly exposing the storage repository. This distinction is important in a clinical environment. Retrieval requests should be checked against `AccessPolicy`, which encodes role-based and purpose-based rules before any data are returned. If a user is authorized but does not require full identity detail, the policy can provide masked results rather than unrestricted payloads. That pattern aligns well with privacy-by-design expectations for healthcare systems.
+
+Deletion is modeled through `RetentionPolicy` rather than ad hoc removal. This allows retention windows, legal hold conditions, and scheduled cleanup to be expressed explicitly and reviewed independently from ordinary storage logic. The presence of `AuditEntry` emphasizes that successful and denied accesses should both leave evidence, supporting accountability and security review.
+
+From a modularity perspective, the design keeps persistence concerns isolated from alert generation and identity matching. Other subsystems request data through defined operations, but they do not manage encryption, version integrity, or deletion policy themselves. That separation improves maintainability and makes it easier to swap storage technology later while preserving access rules and data governance obligations.

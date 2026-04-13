@@ -1,0 +1,70 @@
+@startuml
+skinparam classAttributeIconSize 0
+title CHMS Data Storage System
+
+class DataStorage {
+  - patientDataSet: Map<String, PatientData>
+  - retentionPolicy: RetentionPolicy
+  - auditLog: List<AuditEntry>
+  + storeRecord(data: PatientData): void
+  + retrieveVersions(patientId: String, from: Instant, to: Instant): List<RecordVersion>
+  + deleteExpiredData(asOf: Instant): int
+  + encryptAtRest(): void
+}
+
+class PatientData {
+  - patientId: String
+  - classification: String
+  - encryptedPayload: String
+  - lastUpdated: Instant
+  + appendVersion(version: RecordVersion): void
+  + latestVersion(): RecordVersion
+}
+
+class RecordVersion {
+  - versionNumber: int
+  - capturedAt: Instant
+  - checksum: String
+  - deleted: boolean
+  + markDeleted(reason: String): void
+  + verifyChecksum(): boolean
+}
+
+class DataRetriever {
+  - storage: DataStorage
+  - accessPolicy: AccessPolicy
+  + getPatientHistory(requesterRole: String, patientId: String, from: Instant, to: Instant): List<RecordVersion>
+  + getLatestRecord(requesterRole: String, patientId: String): RecordVersion
+}
+
+class AccessPolicy {
+  - allowedRoles: Set<String>
+  - minimumPurpose: String
+  + authorize(requesterRole: String, purpose: String): boolean
+  + maskIdentifiers(data: PatientData): PatientData
+}
+
+class AuditEntry {
+  - entryId: String
+  - requesterRole: String
+  - action: String
+  - recordedAt: Instant
+  + summarize(): String
+}
+
+class RetentionPolicy {
+  - retentionDays: int
+  - legalHoldEnabled: boolean
+  + shouldDelete(version: RecordVersion, asOf: Instant): boolean
+  + placeLegalHold(patientId: String): void
+}
+
+DataStorage *-- "1..*" PatientData : stores
+PatientData *-- "1..*" RecordVersion : versions
+DataRetriever --> "1" DataStorage : queries
+DataRetriever --> "1" AccessPolicy : authorizes
+DataStorage o-- "0..*" AuditEntry : records access
+DataStorage --> "1" RetentionPolicy : applies
+RetentionPolicy ..> "1..*" RecordVersion : evaluates
+
+@enduml

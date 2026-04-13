@@ -1,0 +1,9 @@
+# Data Access Layer
+
+This diagram models the boundary between external data sources and the internal CHMS subsystems. The key design decision is to isolate source-specific connection logic behind the `DataListener` abstraction. `TCPDataListener`, `WebSocketDataListener`, and `FileDataListener` each implement the same contract for connecting, reading raw messages, and closing resources. That means the rest of the system can ingest data from live network feeds or archived files without changing downstream processing logic.
+
+Parsing is separated in the same way. `DataParser` defines the transformation contract from raw input into a typed `InboundMeasurement`. Concrete parsers such as `JsonDataParser` and `CsvDataParser` can be selected according to the message format rather than the transport. This is an important modularity choice because transport and format often vary independently in real monitoring environments. A WebSocket feed may emit JSON today and CSV tomorrow, but the listener implementation should not need to know how to interpret the payload.
+
+`DataSourceAdapter` coordinates these two abstractions and acts as the single integration point with the rest of the system. It chooses the appropriate listener and parser, validates the resulting measurement, and forwards the normalized data to `DataStorage`. This preserves separation of concerns: listeners handle connectivity, parsers handle syntax, and storage remains responsible for persistence.
+
+Access rules are simple but deliberate. Components above the adapter should consume only normalized `InboundMeasurement` objects, not raw transport messages or file handles. Likewise, storage should not depend on transport classes. This keeps the architecture flexible, supports future extensions such as message queues or additional formats, and reduces coupling between infrastructure choices and clinical data handling logic.

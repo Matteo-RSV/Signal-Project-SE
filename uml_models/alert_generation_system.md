@@ -1,0 +1,9 @@
+# Alert Generation System
+
+This class model treats alert generation as a focused subsystem that evaluates incoming physiological observations without taking ownership of identity resolution or long-term storage. `AlertGenerator` is the central analysis component. It receives real-time measurements, retrieves the current `PatientDataSnapshot` and `ThresholdProfile`, and applies one or more `AlertRule` objects to determine whether a clinically meaningful breach exists. This keeps threshold logic modular: additional rules can be introduced for new vital signs or more advanced trend analysis without changing alert routing behavior.
+
+`AlertManager` is separated from `AlertGenerator` so that creating an alert is not the same concern as distributing or closing it. The manager owns the lifecycle of active `Alert` objects and is responsible for routing to the appropriate destination role, such as a ward dashboard or clinical responder queue. Treating alert routing as a manager concern improves extensibility because delivery paths can evolve independently from detection logic.
+
+Access rules are intentionally strict. `AlertGenerator` may read threshold settings and the latest measurements from `DataStorage`, but it should not directly browse unrelated patient history. Patient context is obtained only through `PatientIdentifier`, which verifies that the monitored identifier belongs to an admitted patient and that the monitoring assignment is valid. This limits the risk of generating alerts for stale or mismatched identities.
+
+Privacy and modularity are both reinforced by this structure. The subsystem stores only the alert artifact and the minimum patient context needed to act on it. Identity details remain in the identification subsystem, while richer measurement archives remain in the storage subsystem. That separation supports auditing, safer privilege boundaries, and future replacement of routing or rule engines with minimal impact.

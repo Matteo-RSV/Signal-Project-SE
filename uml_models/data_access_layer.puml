@@ -1,0 +1,82 @@
+@startuml
+skinparam classAttributeIconSize 0
+title CHMS Data Access Layer
+
+interface DataListener {
+  + connect(endpoint: String): void
+  + readMessage(): String
+  + close(): void
+}
+
+class TCPDataListener {
+  - host: String
+  - port: int
+  + connect(endpoint: String): void
+  + readMessage(): String
+  + close(): void
+}
+
+class WebSocketDataListener {
+  - uri: String
+  - subscribed: boolean
+  + connect(endpoint: String): void
+  + readMessage(): String
+  + close(): void
+}
+
+class FileDataListener {
+  - filePath: String
+  - cursor: long
+  + connect(endpoint: String): void
+  + readMessage(): String
+  + close(): void
+}
+
+interface DataParser {
+  + parse(rawMessage: String): InboundMeasurement
+  + supports(format: String): boolean
+}
+
+class JsonDataParser {
+  + parse(rawMessage: String): InboundMeasurement
+  + supports(format: String): boolean
+}
+
+class CsvDataParser {
+  + parse(rawMessage: String): InboundMeasurement
+  + supports(format: String): boolean
+}
+
+class DataSourceAdapter {
+  - listener: DataListener
+  - parser: DataParser
+  - storage: DataStorage
+  + ingest(endpoint: String, format: String): void
+  + handleRawMessage(rawMessage: String): InboundMeasurement
+  + forward(measurement: InboundMeasurement): void
+}
+
+class InboundMeasurement {
+  - patientId: String
+  - metricName: String
+  - value: double
+  - observedAt: Instant
+  + isValid(): boolean
+}
+
+class DataStorage {
+  + addPatientData(patientId: int, measurementValue: double, recordType: String, timestamp: long): void
+}
+
+DataListener <|.. TCPDataListener
+DataListener <|.. WebSocketDataListener
+DataListener <|.. FileDataListener
+DataParser <|.. JsonDataParser
+DataParser <|.. CsvDataParser
+DataSourceAdapter *-- "1" DataListener : configures
+DataSourceAdapter *-- "1" DataParser : uses
+DataParser --> "1" InboundMeasurement : produces
+DataSourceAdapter --> "1" DataStorage : forwards to
+DataSourceAdapter ..> "0..*" InboundMeasurement : validates
+
+@enduml
