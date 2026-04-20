@@ -1,9 +1,13 @@
 package com.data_management;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
+
+import com.alerts.Alert;
 import com.alerts.AlertGenerator;
 
 /**
@@ -77,35 +81,77 @@ public class DataStorage {
 
     /**
      * The main method for the DataStorage class.
-     * Initializes the system, reads data into storage, and continuously monitors
-     * and evaluates patient data.
+     * Loads simulator output files into storage, prints the stored records, and
+     * evaluates alert conditions for the loaded patients.
      * 
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        // DataReader is not defined in this scope, should be initialized appropriately.
-        // DataReader reader = new SomeDataReaderImplementation("path/to/data");
-        DataStorage storage = new DataStorage();
-
-        // Assuming the reader has been properly initialized and can read data into the
-        // storage
-        // reader.readData(storage);
-
-        // Example of using DataStorage to retrieve and print records for a patient
-        List<PatientRecord> records = storage.getRecords(1, 1700000000000L, 1800000000000L);
-        for (PatientRecord record : records) {
-            System.out.println("Record for Patient ID: " + record.getPatientId() +
-                    ", Type: " + record.getRecordType() +
-                    ", Data: " + record.getMeasurementValue() +
-                    ", Timestamp: " + record.getTimestamp());
+        if (args.length == 0 || "-h".equals(args[0]) || "--help".equals(args[0])) {
+            printUsage();
+            return;
         }
 
-        // Initialize the AlertGenerator with the storage
-        AlertGenerator alertGenerator = new AlertGenerator(storage);
+        String inputDirectory = args[0];
+        DataStorage storage = new DataStorage();
+        DataReader reader = new FileDataReader(inputDirectory);
 
-        // Evaluate all patients' data to check for conditions that may trigger alerts
-        for (Patient patient : storage.getAllPatients()) {
+        try {
+            reader.readData(storage);
+        } catch (IOException exception) {
+            System.err.println("Unable to read simulator output from '" + inputDirectory + "': "
+                    + exception.getMessage());
+            return;
+        }
+
+        List<Patient> patients = storage.getAllPatients();
+        patients.sort(Comparator.comparingInt(Patient::getPatientId));
+
+        if (patients.isEmpty()) {
+            System.out.println("No patient data was loaded from " + inputDirectory + ".");
+            return;
+        }
+
+        printPatientRecords(patients);
+        printAlerts(storage, patients);
+    }
+
+    private static void printUsage() {
+        System.out.println("Usage: java DataStorage <input-directory>");
+        System.out.println("Reads simulator output files from the given directory, stores");
+        System.out.println("the records, and evaluates alert conditions for each patient.");
+    }
+
+    private static void printPatientRecords(List<Patient> patients) {
+        for (Patient patient : patients) {
+            System.out.println("Patient ID: " + patient.getPatientId());
+            List<PatientRecord> records = patient.getRecords(Long.MIN_VALUE, Long.MAX_VALUE);
+            records.sort(Comparator.comparingLong(PatientRecord::getTimestamp));
+            for (PatientRecord record : records) {
+                System.out.println("  Type: " + record.getRecordType()
+                        + ", Data: " + record.getMeasurementValue()
+                        + ", Timestamp: " + record.getTimestamp());
+            }
+        }
+    }
+
+    private static void printAlerts(DataStorage storage, List<Patient> patients) {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
+        for (Patient patient : patients) {
             alertGenerator.evaluateData(patient);
+        }
+
+        List<Alert> alerts = alertGenerator.getTriggeredAlerts();
+        if (alerts.isEmpty()) {
+            System.out.println("No alerts were triggered for the loaded data.");
+            return;
+        }
+
+        System.out.println("Triggered alerts:");
+        for (Alert alert : alerts) {
+            System.out.println("  Patient ID: " + alert.getPatientId()
+                    + ", Condition: " + alert.getCondition()
+                    + ", Timestamp: " + alert.getTimestamp());
         }
     }
 }

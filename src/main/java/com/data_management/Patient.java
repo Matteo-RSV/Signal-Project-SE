@@ -41,6 +41,15 @@ public class Patient {
     }
 
     /**
+     * Returns the unique identifier for this patient.
+     *
+     * @return the patient ID
+     */
+    public int getPatientId() {
+        return patientId;
+    }
+
+    /**
      * Retrieves a list of PatientRecord objects for this patient that fall within a
      * specified time range.
      * The method filters records based on the start and end times provided.
@@ -52,7 +61,19 @@ public class Patient {
      *         range
      */
     public List<PatientRecord> getRecords(long startTime, long endTime) {
-        // Returning empty list for now to satisfy compilation (TODO: implement properly)
-        return new ArrayList<>();
+        List<PatientRecord> recordsInRange = new ArrayList<>();
+
+        if (startTime > endTime) {
+            return recordsInRange;
+        }
+
+        for (PatientRecord record : patientRecords) {
+            long timestamp = record.getTimestamp();
+            if (timestamp >= startTime && timestamp <= endTime) {
+                recordsInRange.add(record);
+            }
+        }
+
+        return recordsInRange;
     }
 }
