@@ -3,31 +3,31 @@ skinparam classAttributeIconSize 0
 title CHMS Patient Identification System
 
 class PatientIdentifier {
-  - minimumConfidence: double
-  + matchPatient(token: IdentifierToken, profile: DemographicProfile, candidates: List<HospitalPatient>): MatchResult
-  + compareProfile(profile: DemographicProfile, patient: HospitalPatient): double
-  + validateToken(token: IdentifierToken): boolean
+  - minimumScore: double
+  + findMatch(token: IdentifierToken, details: DemographicProfile, candidates: List<HospitalPatient>): MatchResult
+  + compareDetails(details: DemographicProfile, patient: HospitalPatient): double
+  + checkToken(token: IdentifierToken): boolean
 }
 
 class HospitalPatient {
   - patientId: String
   - fullName: String
   - medicalRecordNumber: String
-  - medicalHistorySummary: String
+  - historyNote: String
   - admissionStatus: String
   - dateOfBirth: LocalDate
-  + isActiveAdmission(): boolean
-  + getClinicalSummary(): String
+  + isActive(): boolean
+  + getShortHistory(): String
 }
 
 class IdentityManager {
   - patientRepository: PatientRepository
   - identifier: PatientIdentifier
   - accessPolicy: AccessPolicy
-  - anomalies: List<IdentityAnomaly>
-  + resolveIdentity(token: IdentifierToken, profile: DemographicProfile): MatchResult
-  + getPatientInfo(patientId: String, requesterRole: String): HospitalPatient
-  + recordAnomaly(anomaly: IdentityAnomaly): void
+  - anomalyLog: List<IdentityAnomaly>
+  + matchIncomingPatient(token: IdentifierToken, details: DemographicProfile): MatchResult
+  + getPatientRecord(patientId: String, requesterRole: String): HospitalPatient
+  + logAnomaly(anomaly: IdentityAnomaly): void
 }
 
 class DemographicProfile {
@@ -39,21 +39,21 @@ class DemographicProfile {
 }
 
 class MatchResult {
-  - confidenceScore: double
+  - score: double
   - matchStatus: String
   - matchedPatientId: String
-  + isAccepted(threshold: double): boolean
-  + isAmbiguous(): boolean
+  + isAccepted(limit: double): boolean
+  + needsReview(): boolean
 }
 
 class IdentityAnomaly {
   - anomalyId: String
-  - anomalyType: String
-  - details: String
+  - type: String
+  - notes: String
   - detectedAt: Instant
   - severity: String
-  + assignForReview(teamId: String): void
-  + close(resolutionNote: String): void
+  + sendToReview(teamId: String): void
+  + close(note: String): void
 }
 
 class IdentifierToken {
@@ -61,19 +61,19 @@ class IdentifierToken {
   - tokenValue: String
   - issuer: String
   - issuedAt: Instant
-  + isTrusted(asOf: Instant): boolean
+  + isUsable(asOf: Instant): boolean
 }
 
 class PatientRepository {
-  - patientIndex: Map<String, HospitalPatient>
-  + findCandidates(token: IdentifierToken, profile: DemographicProfile): List<HospitalPatient>
-  + findByPatientId(patientId: String): HospitalPatient
+  - patients: Map<String, HospitalPatient>
+  + findPossiblePatients(token: IdentifierToken, details: DemographicProfile): List<HospitalPatient>
+  + getPatient(patientId: String): HospitalPatient
 }
 
 class AccessPolicy {
   - rolePermissions: Map<String, Set<String>>
-  + canViewPatient(requesterRole: String, patientId: String): boolean
-  + maskPatient(patient: HospitalPatient): HospitalPatient
+  + canOpenRecord(requesterRole: String, patientId: String): boolean
+  + hideSensitiveFields(patient: HospitalPatient): HospitalPatient
 }
 
 IdentityManager *-- "1" PatientIdentifier : uses

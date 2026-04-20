@@ -3,70 +3,70 @@ skinparam classAttributeIconSize 0
 title CHMS Data Access Layer
 
 interface DataListener {
-  + connect(endpoint: String): void
-  + receive(): String
+  + open(endpoint: String): void
+  + readMessage(): String
   + close(): void
 }
 
 class TCPDataListener {
   - host: String
   - port: int
-  + connect(endpoint: String): void
-  + receive(): String
+  + open(endpoint: String): void
+  + readMessage(): String
   + close(): void
 }
 
 class WebSocketDataListener {
   - uri: String
-  - subscribedChannel: String
-  + connect(endpoint: String): void
-  + receive(): String
+  - channel: String
+  + open(endpoint: String): void
+  + readMessage(): String
   + close(): void
 }
 
 class FileDataListener {
   - filePath: String
-  - cursor: long
-  + connect(endpoint: String): void
-  + receive(): String
+  - lineNumber: long
+  + open(endpoint: String): void
+  + readMessage(): String
   + close(): void
 }
 
 interface DataParser {
-  + parse(rawMessage: String): ParsedMeasurement
+  + parse(rawText: String): IncomingReading
   + supports(format: String): boolean
 }
 
 class JsonDataParser {
-  + parse(rawMessage: String): ParsedMeasurement
+  + parse(rawText: String): IncomingReading
   + supports(format: String): boolean
 }
 
 class CsvDataParser {
-  + parse(rawMessage: String): ParsedMeasurement
+  + parse(rawText: String): IncomingReading
   + supports(format: String): boolean
 }
 
 class DataSourceAdapter {
   - listener: DataListener
   - parser: DataParser
-  - receiver: CHMSInputPort
-  + ingest(endpoint: String, format: String): void
-  + readAndParse(): ParsedMeasurement
-  + submitMeasurement(measurement: ParsedMeasurement): void
+  - receiver: MeasurementReceiver
+  + start(endpoint: String, format: String): void
+  + nextReading(): IncomingReading
+  + deliver(reading: IncomingReading): void
 }
 
-class ParsedMeasurement {
+class IncomingReading {
   - patientId: String
   - metricName: String
   - value: double
   - unit: String
-  - observedAt: Instant
+  - recordedAt: Instant
   + isValid(): boolean
 }
 
-interface CHMSInputPort {
-  + acceptMeasurement(measurement: ParsedMeasurement): void
+interface MeasurementReceiver {
+  + accept(reading: IncomingReading): void
 }
 
 DataListener <|.. TCPDataListener
@@ -76,8 +76,8 @@ DataParser <|.. JsonDataParser
 DataParser <|.. CsvDataParser
 DataSourceAdapter *-- "1" DataListener : configures
 DataSourceAdapter *-- "1" DataParser : uses
-DataParser --> "1" ParsedMeasurement : produces
-DataSourceAdapter --> "1" CHMSInputPort : forwards to
-DataSourceAdapter ..> "0..*" ParsedMeasurement : validates
+DataParser --> "1" IncomingReading : produces
+DataSourceAdapter --> "1" MeasurementReceiver : forwards to
+DataSourceAdapter ..> "0..*" IncomingReading : validates
 
 @enduml

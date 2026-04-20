@@ -3,13 +3,13 @@ skinparam classAttributeIconSize 0
 title CHMS Data Storage System
 
 class DataStorage {
-  - encryptedRecords: Map<String, List<PatientData>>
-  - retentionPolicy: RetentionPolicy
-  - auditEntries: List<AuditEntry>
-  + storeRecord(record: PatientData): void
-  + fetchRecords(patientId: String, from: Instant, to: Instant): List<PatientData>
-  + saveVersion(recordId: String, version: DataVersion): void
-  + purgeExpiredRecords(asOf: Instant): int
+  - patientRecords: Map<String, List<PatientData>>
+  - keepData: RetentionPolicy
+  - accessLog: List<AuditEntry>
+  + saveRecord(record: PatientData): void
+  + getRecords(patientId: String, from: Instant, to: Instant): List<PatientData>
+  + saveCorrection(recordId: String, version: DataVersion): void
+  + removeExpiredRecords(asOf: Instant): int
 }
 
 class PatientData {
@@ -20,29 +20,29 @@ class PatientData {
   - unit: String
   - recordedAt: Instant
   + addVersion(version: DataVersion): void
-  + getLatestVersion(): DataVersion
+  + getNewestVersion(): DataVersion
 }
 
 class DataVersion {
   - versionNumber: int
-  - revisedValue: double
-  - revisedBy: String
-  - revisedAt: Instant
-  - correctionReason: String
-  + isCurrent(): boolean
-  + supersedes(versionNumber: int): boolean
+  - correctedValue: double
+  - correctedBy: String
+  - correctedAt: Instant
+  - reason: String
+  + isLatest(): boolean
+  + replaces(versionNumber: int): boolean
 }
 
 class DataRetriever {
   - storage: DataStorage
   - accessController: AccessController
-  + retrieveLatest(request: AccessRequest, patientId: String, metricType: String): PatientData
-  + retrieveHistory(request: AccessRequest, patientId: String, from: Instant, to: Instant): List<PatientData>
+  + getLatestRecord(request: AccessRequest, patientId: String, metricType: String): PatientData
+  + getHistory(request: AccessRequest, patientId: String, from: Instant, to: Instant): List<PatientData>
 }
 
 class AccessController {
-  - rolePermissions: Map<String, Set<String>>
-  + authorize(request: AccessRequest, patientId: String, action: String): boolean
+  - allowedActions: Map<String, Set<String>>
+  + allow(request: AccessRequest, patientId: String, action: String): boolean
   + filterForRole(record: PatientData, role: String): PatientData
 }
 
@@ -51,12 +51,12 @@ class AccessRequest {
   - requesterRole: String
   - purposeOfUse: String
   - requestedAt: Instant
-  + isEmergencyAccess(): boolean
+  + isEmergency(): boolean
 }
 
 class RetentionPolicy {
   - retentionDays: int
-  - archiveBeforeDelete: boolean
+  - archiveFirst: boolean
   - legalHoldPatients: Set<String>
   + shouldArchive(record: PatientData, asOf: Instant): boolean
   + shouldDelete(record: PatientData, asOf: Instant): boolean
@@ -67,8 +67,8 @@ class AuditEntry {
   - requesterId: String
   - action: String
   - patientId: String
-  - recordedAt: Instant
-  + describe(): String
+  - loggedAt: Instant
+  + toText(): String
 }
 
 DataStorage *-- "0..*" PatientData : stores

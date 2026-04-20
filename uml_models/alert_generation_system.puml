@@ -3,12 +3,12 @@ skinparam classAttributeIconSize 0
 title CHMS Alert Generation System
 
 class AlertGenerator {
-  - dataStorage: DataStorage
-  - patientIdentifier: PatientIdentifier
-  - alertManager: AlertManager
-  + evaluateRealTimeData(patientId: String, metricName: String, value: double, observedAt: Instant): Alert
-  + loadThresholdProfile(patientId: String): ThresholdProfile
-  - buildAlert(snapshot: PatientDataSnapshot, rule: AlertRule): Alert
+  - storage: DataStorage
+  - patientLookup: PatientIdentifier
+  - manager: AlertManager
+  + checkReading(patientId: String, metricName: String, value: double, observedAt: Instant): Alert
+  + getThresholds(patientId: String): ThresholdProfile
+  - createAlert(reading: PatientDataSnapshot, rule: AlertRule): Alert
 }
 
 class Alert {
@@ -22,11 +22,11 @@ class Alert {
 }
 
 class AlertManager {
-  - activeAlerts: Map<String, Alert>
-  - routingTargets: List<String>
-  + registerAlert(alert: Alert): void
-  + routeAlert(alert: Alert, destinationRole: String): void
-  + closeAlert(alertId: String): void
+  - openAlerts: Map<String, Alert>
+  - routeList: List<String>
+  + addAlert(alert: Alert): void
+  + sendAlert(alert: Alert, targetRole: String): void
+  + resolveAlert(alertId: String): void
 }
 
 class AlertRule {
@@ -34,15 +34,15 @@ class AlertRule {
   - lowerLimit: double
   - upperLimit: double
   - minimumDurationSec: int
-  + isBreached(snapshot: PatientDataSnapshot, profile: ThresholdProfile): boolean
+  + checkThreshold(reading: PatientDataSnapshot, profile: ThresholdProfile): boolean
 }
 
 class ThresholdProfile {
   - patientId: String
-  - thresholdVersion: int
-  - customLimits: Map<String, String>
-  + getLimit(metricName: String): String
-  + updateLimit(metricName: String, ruleExpression: String): void
+  - versionNumber: int
+  - limits: Map<String, String>
+  + getRule(metricName: String): String
+  + changeRule(metricName: String, ruleText: String): void
 }
 
 class PatientDataSnapshot {
@@ -50,25 +50,25 @@ class PatientDataSnapshot {
   - metricName: String
   - value: double
   - observedAt: Instant
-  + isRecent(referenceTime: Instant): boolean
+  + isFresh(now: Instant): boolean
 }
 
 class PatientIdentifier {
-  + resolvePatient(patientId: String): HospitalPatient
-  + verifyMonitoringAssignment(patientId: String): boolean
+  + getPatient(patientId: String): HospitalPatient
+  + isCurrentAssignment(patientId: String): boolean
 }
 
 class HospitalPatient {
   - patientId: String
   - monitoringStatus: String
-  - wardLocation: String
+  - ward: String
   + isAdmitted(): boolean
 }
 
 class DataStorage {
-  + getLatestSnapshot(patientId: String, metricName: String): PatientDataSnapshot
-  + storeAlert(alert: Alert): void
-  + loadThresholdProfile(patientId: String): ThresholdProfile
+  + readLatestReading(patientId: String, metricName: String): PatientDataSnapshot
+  + saveAlert(alert: Alert): void
+  + getThresholdProfile(patientId: String): ThresholdProfile
 }
 
 AlertGenerator --> "1" DataStorage : reads and persists
