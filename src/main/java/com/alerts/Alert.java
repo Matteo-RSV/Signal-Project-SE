@@ -1,68 +1,35 @@
 package com.alerts;
 
 /**
- * Represents an alert generated for a patient.
- *
- * <p>An alert contains information about the patient, the condition that triggered
- * the alert, and the time at which the alert occurred. This class acts as a data
- * container used by the alert system.
+ * Represents a simple alert in the monitoring system.
  */
-public class Alert {
-
-    /** The unique identifier of the patient associated with the alert. */
-    private String patientId;
-
-    /** The condition or event that triggered the alert. */
-    private String condition;
-
-    /** The timestamp indicating when the alert was generated. */
-    private long timestamp;
+public interface Alert {
 
     /**
-     * Constructs a new {@code Alert} with the specified details.
+     * Returns the patient ID connected to this alert.
      *
-     * @param patientId the identifier of the patient
-     * @param condition the condition that triggered the alert
-     * @param timestamp the time at which the alert occurred
+     * @return the patient ID
      */
-    public Alert(String patientId, String condition, long timestamp) {
-
-        this.patientId = patientId;
-        this.condition = condition;
-        this.timestamp = timestamp;
-        
-    }
+    String getPatientId();
 
     /**
-     * Returns the identifier of the patient associated with this alert.
+     * Returns the alert condition.
      *
-     * @return the patient ID as a string
+     * @return the condition
      */
-    public String getPatientId() {
-
-        return patientId;
-
-    }
+    String getCondition();
 
     /**
-     * Returns the condition that triggered this alert.
+     * Returns the time when the alert happened.
      *
-     * @return the alert condition
+     * @return the timestamp
      */
-    public String getCondition() {
-
-        return condition;
-
-    }
+    long getTimestamp();
 
     /**
-     * Returns the timestamp of when the alert was generated.
+     * Returns a readable alert message.
      *
-     * @return the alert timestamp in milliseconds
+     * @return the message
      */
-    public long getTimestamp() {
-
-        return timestamp;
-
-    }
+    String getMessage();
 }

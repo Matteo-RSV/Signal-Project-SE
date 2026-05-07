@@ -80,7 +80,7 @@ public class AlertGenerator {
                 findTrendRecord(systolicRecords, true),
                 findTrendRecord(diastolicRecords, true));
         if (increasingTrendRecord != null) {
-            triggerAlert(new Alert(patientIdText, "Blood pressure increasing trend alert",
+            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure increasing trend alert",
                     increasingTrendRecord.getTimestamp()));
         }
 
@@ -88,7 +88,7 @@ public class AlertGenerator {
                 findTrendRecord(systolicRecords, false),
                 findTrendRecord(diastolicRecords, false));
         if (decreasingTrendRecord != null) {
-            triggerAlert(new Alert(patientIdText, "Blood pressure decreasing trend alert",
+            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure decreasing trend alert",
                     decreasingTrendRecord.getTimestamp()));
         }
 
@@ -96,33 +96,35 @@ public class AlertGenerator {
                 findCriticalThresholdRecord(systolicRecords, 90.0, 180.0),
                 findCriticalThresholdRecord(diastolicRecords, 60.0, 120.0));
         if (criticalPressureRecord != null) {
-            triggerAlert(new Alert(patientIdText, "Blood pressure critical threshold alert",
+            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure critical threshold alert",
                     criticalPressureRecord.getTimestamp()));
         }
 
         PatientRecord lowSaturationRecord = findLowSaturationRecord(saturationRecords);
         if (lowSaturationRecord != null) {
-            triggerAlert(new Alert(patientIdText, "Low saturation alert", lowSaturationRecord.getTimestamp()));
+            triggerAlert(new BloodOxygenAlert(patientIdText, "Low saturation alert",
+                    lowSaturationRecord.getTimestamp()));
         }
 
         PatientRecord rapidDropRecord = findRapidDropRecord(saturationRecords);
         if (rapidDropRecord != null) {
-            triggerAlert(new Alert(patientIdText, "Rapid saturation drop alert", rapidDropRecord.getTimestamp()));
+            triggerAlert(new BloodOxygenAlert(patientIdText, "Rapid saturation drop alert",
+                    rapidDropRecord.getTimestamp()));
         }
 
         long combinedAlertTimestamp = findHypotensiveHypoxemiaTimestamp(systolicRecords, saturationRecords);
         if (combinedAlertTimestamp >= 0) {
-            triggerAlert(new Alert(patientIdText, "Hypotensive hypoxemia alert", combinedAlertTimestamp));
+            triggerAlert(new BloodOxygenAlert(patientIdText, "Hypotensive hypoxemia alert", combinedAlertTimestamp));
         }
 
         PatientRecord ecgPeakRecord = findAbnormalEcgPeakRecord(ecgRecords);
         if (ecgPeakRecord != null) {
-            triggerAlert(new Alert(patientIdText, "ECG abnormal peak alert", ecgPeakRecord.getTimestamp()));
+            triggerAlert(new ECGAlert(patientIdText, "ECG abnormal peak alert", ecgPeakRecord.getTimestamp()));
         }
 
         PatientRecord latestAlertState = findLatestAlertState(alertRecords);
         if (latestAlertState != null && latestAlertState.getMeasurementValue() >= 0.5) {
-            triggerAlert(new Alert(patientIdText, "Triggered alert", latestAlertState.getTimestamp()));
+            triggerAlert(new BasicAlert(patientIdText, "Triggered alert", latestAlertState.getTimestamp()));
         }
 
     }
