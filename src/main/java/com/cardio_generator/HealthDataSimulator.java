@@ -35,18 +35,36 @@ import java.util.ArrayList;
  * <p>Supported output types include console, file, WebSocket, and TCP socket output.
  */
 public class HealthDataSimulator {
+    private static HealthDataSimulator instance;
 
     /** Default number of patients to simulate. */
-    private static int patientCount = 50;
+    private int patientCount;
 
     /** Scheduler used to run periodic data generation tasks. */
-    private static ScheduledExecutorService scheduler;
+    private ScheduledExecutorService scheduler;
 
     /** Strategy used to output generated data. Defaults to console output. */
-    private static OutputStrategy outputStrategy = new ConsoleOutputStrategy();
+    private OutputStrategy outputStrategy;
 
     /** Random number generator used for scheduling variability. */
-    private static final Random random = new Random();
+    private final Random random;
+
+    private HealthDataSimulator() {
+        this.random = new Random();
+        resetConfiguration();
+    }
+
+    /**
+     * Returns the single simulator instance.
+     *
+     * @return the simulator instance
+     */
+    public static HealthDataSimulator getInstance() {
+        if (instance == null) {
+            instance = new HealthDataSimulator();
+        }
+        return instance;
+    }
 
     /**
      * Main method that starts the health data simulation.
@@ -58,15 +76,29 @@ public class HealthDataSimulator {
      * @throws IOException if there is an error creating output directories
      */
     public static void main(String[] args) throws IOException {
+        HealthDataSimulator.getInstance().run(args);
+    }
 
+    /**
+     * Runs the simulator with the given command-line arguments.
+     *
+     * @param args command-line arguments specifying simulation configuration
+     * @throws IOException if there is an error creating output directories
+     */
+    public void run(String[] args) throws IOException {
+        resetConfiguration();
         parseArguments(args);
-
         scheduler = Executors.newScheduledThreadPool(patientCount * 4);
 
         List<Integer> patientIds = initializePatientIds(patientCount);
         Collections.shuffle(patientIds);
 
         scheduleTasksForPatients(patientIds);
+    }
+
+    private void resetConfiguration() {
+        patientCount = 50;
+        outputStrategy = new ConsoleOutputStrategy();
     }
 
     /**
@@ -82,7 +114,7 @@ public class HealthDataSimulator {
      * @param args command-line arguments provided to the program
      * @throws IOException if file output directories cannot be created
      */
-    private static void parseArguments(String[] args) throws IOException {
+    private void parseArguments(String[] args) throws IOException {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-h":
@@ -155,7 +187,7 @@ public class HealthDataSimulator {
     /**
      * Prints usage instructions and available command-line options to the console.
      */
-    private static void printHelp() {
+    private void printHelp() {
         System.out.println("Usage: java HealthDataSimulator [options]");
         System.out.println("Options:");
         System.out.println("  -h                       Show help and exit.");
@@ -174,7 +206,7 @@ public class HealthDataSimulator {
      * @param patientCount the number of patients to simulate
      * @return a list of sequential patient IDs
      */
-    private static List<Integer> initializePatientIds(int patientCount) {
+    private List<Integer> initializePatientIds(int patientCount) {
 
         List<Integer> patientIds = new ArrayList<>();
         for (int i = 1; i <= patientCount; i++) {
@@ -194,7 +226,7 @@ public class HealthDataSimulator {
      *
      * @param patientIds list of patient IDs for which tasks are scheduled
      */
-    private static void scheduleTasksForPatients(List<Integer> patientIds) {
+    private void scheduleTasksForPatients(List<Integer> patientIds) {
 
         ECGDataGenerator ecgDataGenerator = new ECGDataGenerator(patientCount);
         BloodSaturationDataGenerator bloodSaturationDataGenerator = new BloodSaturationDataGenerator(patientCount);
@@ -223,7 +255,7 @@ public class HealthDataSimulator {
      * @param period the interval between executions
      * @param timeUnit the time unit of the period
      */
-    private static void scheduleTask(Runnable task, long period, TimeUnit timeUnit) {
+    private void scheduleTask(Runnable task, long period, TimeUnit timeUnit) {
 
         scheduler.scheduleAtFixedRate(task, random.nextInt(5), period, timeUnit);
 

@@ -17,14 +17,27 @@ import com.alerts.AlertGenerator;
  * patient IDs.
  */
 public class DataStorage {
+    private static DataStorage instance;
     private Map<Integer, Patient> patientMap; // Stores patient objects indexed by their unique patient ID.
 
     /**
      * Constructs a new instance of DataStorage, initializing the underlying storage
      * structure.
      */
-    public DataStorage() {
+    private DataStorage() {
         this.patientMap = new HashMap<>();
+    }
+
+    /**
+     * Returns the single data storage instance.
+     *
+     * @return the data storage instance
+     */
+    public static DataStorage getInstance() {
+        if (instance == null) {
+            instance = new DataStorage();
+        }
+        return instance;
     }
 
     /**
@@ -80,6 +93,13 @@ public class DataStorage {
     }
 
     /**
+     * Clears all stored patient data.
+     */
+    public void clearData() {
+        patientMap.clear();
+    }
+
+    /**
      * The main method for the DataStorage class.
      * Loads simulator output files into storage, prints the stored records, and
      * evaluates alert conditions for the loaded patients.
@@ -93,7 +113,8 @@ public class DataStorage {
         }
 
         String inputDirectory = args[0];
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
+        storage.clearData();
         DataReader reader = new FileDataReader(inputDirectory);
 
         try {

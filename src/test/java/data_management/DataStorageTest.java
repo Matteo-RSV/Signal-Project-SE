@@ -6,12 +6,20 @@ import com.data_management.PatientRecord;
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataStorageTest {
+
+    @BeforeEach
+    void clearStorage() {
+        DataStorage.getInstance().clearData();
+    }
 
     @Test
     void getRecordsReturnsOnlyRecordsInsideInclusiveRange() {
@@ -56,8 +64,17 @@ class DataStorageTest {
     }
 
     @Test
+    void dataStorageGetInstanceReturnsSingletonObject() {
+        DataStorage firstStorage = DataStorage.getInstance();
+        DataStorage secondStorage = DataStorage.getInstance();
+
+        assertNotNull(firstStorage);
+        assertSame(firstStorage, secondStorage);
+    }
+
+    @Test
     void dataStorageSeparatesPatientsAndPreservesRecordOrder() {
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         storage.addPatientData(1, 110.0, "SystolicPressure", 100L);
         storage.addPatientData(2, 91.0, "Saturation", 200L);
         storage.addPatientData(1, 115.0, "SystolicPressure", 300L);
@@ -74,7 +91,7 @@ class DataStorageTest {
 
     @Test
     void dataStorageReturnsEmptyListForUnknownPatient() {
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         storage.addPatientData(1, 100.0, "ECG", 100L);
 
         assertTrue(storage.getRecords(999, 0L, 1_000L).isEmpty());

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,6 +22,11 @@ class FileDataReaderTest {
 
     @TempDir
     Path tempDirectory;
+
+    @BeforeEach
+    void clearStorage() {
+        DataStorage.getInstance().clearData();
+    }
 
     @Test
     void readDataParsesValidFilesAndIgnoresMalformedLines() throws IOException {
@@ -35,7 +41,7 @@ class FileDataReaderTest {
         Files.writeString(tempDirectory.resolve("ignored.log"),
                 "Patient ID: 99, Timestamp: 5000, Label: ECG, Data: 2.5\n");
 
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         FileDataReader reader = new FileDataReader(tempDirectory.toString());
 
         reader.readData(storage);
@@ -59,7 +65,7 @@ class FileDataReaderTest {
 
     @Test
     void readDataLeavesStorageEmptyWhenDirectoryHasNoInputFiles() throws IOException {
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         FileDataReader reader = new FileDataReader(tempDirectory.toString());
 
         reader.readData(storage);
@@ -72,6 +78,6 @@ class FileDataReaderTest {
         Path missingDirectory = tempDirectory.resolve("missing");
         FileDataReader reader = new FileDataReader(missingDirectory.toString());
 
-        assertThrows(IOException.class, () -> reader.readData(new DataStorage()));
+        assertThrows(IOException.class, () -> reader.readData(DataStorage.getInstance()));
     }
 }

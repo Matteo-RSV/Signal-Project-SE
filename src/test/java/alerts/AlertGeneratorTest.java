@@ -19,7 +19,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataTriggersBloodPressureTrendAlerts() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
 
         Patient increasingPatient = new Patient(1);
         increasingPatient.addRecord(100.0, "SystolicPressure", 1L);
@@ -42,7 +42,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataDoesNotTriggerTrendAlertForSmallBloodPressureChanges() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
         Patient patient = new Patient(3);
         patient.addRecord(120.0, "SystolicPressure", 1L);
         patient.addRecord(128.0, "SystolicPressure", 2L);
@@ -56,7 +56,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataRespectsCriticalBloodPressureThresholdBoundaries() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
 
         Patient boundaryPatient = new Patient(4);
         boundaryPatient.addRecord(180.0, "SystolicPressure", 1L);
@@ -79,7 +79,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataTriggersLowSaturationAndRapidDropAlerts() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
         Patient patient = new Patient(6);
         patient.addRecord(97.0, "Saturation", 0L);
         patient.addRecord(91.0, "Saturation", 5 * ONE_MINUTE);
@@ -93,7 +93,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataDoesNotTriggerRapidDropOutsideTimeWindowOrThreshold() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
 
         Patient outsideWindowPatient = new Patient(7);
         outsideWindowPatient.addRecord(97.0, "Saturation", 0L);
@@ -112,7 +112,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataTriggersCombinedHypotensiveHypoxemiaAlertOnlyWhenBothSignalsAreLow() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
 
         Patient combinedAlertPatient = new Patient(9);
         combinedAlertPatient.addRecord(88.0, "SystolicPressure", 0L);
@@ -121,7 +121,7 @@ class AlertGeneratorTest {
         generator.evaluateData(combinedAlertPatient);
         assertTrue(alertConditions(generator).contains("Hypotensive hypoxemia alert"));
 
-        AlertGenerator separateGenerator = new AlertGenerator(new DataStorage());
+        AlertGenerator separateGenerator = new AlertGenerator(DataStorage.getInstance());
         Patient separatedSignalsPatient = new Patient(10);
         separatedSignalsPatient.addRecord(88.0, "SystolicPressure", 0L);
         separatedSignalsPatient.addRecord(91.0, "Saturation", 15 * ONE_MINUTE);
@@ -132,7 +132,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataTriggersEcgAbnormalPeakAlertUsingSlidingWindowAverage() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
         Patient patient = new Patient(11);
 
         patient.addRecord(0.20, "ECG", 1L);
@@ -149,7 +149,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataTracksTriggeredAlertStateFromAlertRecords() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
         Patient patient = new Patient(12);
         patient.addRecord(1.0, "Alert", 1L);
 
@@ -164,7 +164,7 @@ class AlertGeneratorTest {
 
     @Test
     void evaluateDataLeavesNormalPatientWithoutAlerts() {
-        AlertGenerator generator = new AlertGenerator(new DataStorage());
+        AlertGenerator generator = new AlertGenerator(DataStorage.getInstance());
         Patient patient = new Patient(13);
         patient.addRecord(118.0, "SystolicPressure", 1L);
         patient.addRecord(121.0, "SystolicPressure", 2L);
