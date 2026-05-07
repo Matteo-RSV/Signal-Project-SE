@@ -21,9 +21,6 @@ public class AlertGenerator {
     private static final double ECG_PEAK_MULTIPLIER = 3.0;
     private static final double ECG_PEAK_MIN_DELTA = 1.0;
 
-    // Marked the field as final because it is assigned only once in the constructor
-    // (private DataStorage dataStorage -> private final DataStorage dataStorage)
-    private final DataStorage dataStorage;
     private final List<Alert> triggeredAlerts;
     private final AlertFactory bloodPressureAlertFactory;
     private final AlertFactory bloodOxygenAlertFactory;
@@ -40,8 +37,10 @@ public class AlertGenerator {
      * @param dataStorage the data storage component used to access patient data
      */
     public AlertGenerator(DataStorage dataStorage) {
+        if (dataStorage == null) {
+            throw new IllegalArgumentException("dataStorage cannot be null");
+        }
 
-        this.dataStorage = dataStorage;
         this.triggeredAlerts = new ArrayList<>();
         this.bloodPressureAlertFactory = new BloodPressureAlertFactory();
         this.bloodOxygenAlertFactory = new BloodOxygenAlertFactory();
