@@ -25,6 +25,9 @@ public class AlertGenerator {
     // (private DataStorage dataStorage -> private final DataStorage dataStorage)
     private final DataStorage dataStorage;
     private final List<Alert> triggeredAlerts;
+    private final AlertFactory bloodPressureAlertFactory;
+    private final AlertFactory bloodOxygenAlertFactory;
+    private final AlertFactory ecgAlertFactory;
 
     // Updated the Javadoc for clarity and readability in line with the Google Java Style Guide
     /**
@@ -36,6 +39,9 @@ public class AlertGenerator {
 
         this.dataStorage = dataStorage;
         this.triggeredAlerts = new ArrayList<>();
+        this.bloodPressureAlertFactory = new BloodPressureAlertFactory();
+        this.bloodOxygenAlertFactory = new BloodOxygenAlertFactory();
+        this.ecgAlertFactory = new ECGAlertFactory();
         
     }
 
@@ -80,46 +86,48 @@ public class AlertGenerator {
                 findTrendRecord(systolicRecords, true),
                 findTrendRecord(diastolicRecords, true));
         if (increasingTrendRecord != null) {
-            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure increasing trend alert",
-                    increasingTrendRecord.getTimestamp()));
+            triggerAlert(bloodPressureAlertFactory.createAlert(patientIdText,
+                    "Blood pressure increasing trend alert", increasingTrendRecord.getTimestamp()));
         }
 
         PatientRecord decreasingTrendRecord = latestRecord(
                 findTrendRecord(systolicRecords, false),
                 findTrendRecord(diastolicRecords, false));
         if (decreasingTrendRecord != null) {
-            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure decreasing trend alert",
-                    decreasingTrendRecord.getTimestamp()));
+            triggerAlert(bloodPressureAlertFactory.createAlert(patientIdText,
+                    "Blood pressure decreasing trend alert", decreasingTrendRecord.getTimestamp()));
         }
 
         PatientRecord criticalPressureRecord = latestRecord(
                 findCriticalThresholdRecord(systolicRecords, 90.0, 180.0),
                 findCriticalThresholdRecord(diastolicRecords, 60.0, 120.0));
         if (criticalPressureRecord != null) {
-            triggerAlert(new BloodPressureAlert(patientIdText, "Blood pressure critical threshold alert",
-                    criticalPressureRecord.getTimestamp()));
+            triggerAlert(bloodPressureAlertFactory.createAlert(patientIdText,
+                    "Blood pressure critical threshold alert", criticalPressureRecord.getTimestamp()));
         }
 
         PatientRecord lowSaturationRecord = findLowSaturationRecord(saturationRecords);
         if (lowSaturationRecord != null) {
-            triggerAlert(new BloodOxygenAlert(patientIdText, "Low saturation alert",
+            triggerAlert(bloodOxygenAlertFactory.createAlert(patientIdText, "Low saturation alert",
                     lowSaturationRecord.getTimestamp()));
         }
 
         PatientRecord rapidDropRecord = findRapidDropRecord(saturationRecords);
         if (rapidDropRecord != null) {
-            triggerAlert(new BloodOxygenAlert(patientIdText, "Rapid saturation drop alert",
+            triggerAlert(bloodOxygenAlertFactory.createAlert(patientIdText, "Rapid saturation drop alert",
                     rapidDropRecord.getTimestamp()));
         }
 
         long combinedAlertTimestamp = findHypotensiveHypoxemiaTimestamp(systolicRecords, saturationRecords);
         if (combinedAlertTimestamp >= 0) {
-            triggerAlert(new BloodOxygenAlert(patientIdText, "Hypotensive hypoxemia alert", combinedAlertTimestamp));
+            triggerAlert(bloodOxygenAlertFactory.createAlert(patientIdText,
+                    "Hypotensive hypoxemia alert", combinedAlertTimestamp));
         }
 
         PatientRecord ecgPeakRecord = findAbnormalEcgPeakRecord(ecgRecords);
         if (ecgPeakRecord != null) {
-            triggerAlert(new ECGAlert(patientIdText, "ECG abnormal peak alert", ecgPeakRecord.getTimestamp()));
+            triggerAlert(ecgAlertFactory.createAlert(patientIdText, "ECG abnormal peak alert",
+                    ecgPeakRecord.getTimestamp()));
         }
 
         PatientRecord latestAlertState = findLatestAlertState(alertRecords);
