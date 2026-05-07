@@ -28,6 +28,10 @@ public class AlertGenerator {
     private final AlertFactory bloodPressureAlertFactory;
     private final AlertFactory bloodOxygenAlertFactory;
     private final AlertFactory ecgAlertFactory;
+    private final AlertStrategy systolicBloodPressureStrategy;
+    private final AlertStrategy diastolicBloodPressureStrategy;
+    private final AlertStrategy lowSystolicBloodPressureStrategy;
+    private final AlertStrategy oxygenSaturationStrategy;
 
     // Updated the Javadoc for clarity and readability in line with the Google Java Style Guide
     /**
@@ -42,6 +46,10 @@ public class AlertGenerator {
         this.bloodPressureAlertFactory = new BloodPressureAlertFactory();
         this.bloodOxygenAlertFactory = new BloodOxygenAlertFactory();
         this.ecgAlertFactory = new ECGAlertFactory();
+        this.systolicBloodPressureStrategy = new BloodPressureStrategy(90.0, 180.0);
+        this.diastolicBloodPressureStrategy = new BloodPressureStrategy(60.0, 120.0);
+        this.lowSystolicBloodPressureStrategy = new BloodPressureStrategy(90.0, Double.MAX_VALUE);
+        this.oxygenSaturationStrategy = new OxygenSaturationStrategy();
         
     }
 
@@ -99,14 +107,14 @@ public class AlertGenerator {
         }
 
         PatientRecord criticalPressureRecord = latestRecord(
-                findCriticalThresholdRecord(systolicRecords, 90.0, 180.0),
-                findCriticalThresholdRecord(diastolicRecords, 60.0, 120.0));
+                findAlertRecord(systolicRecords, systolicBloodPressureStrategy),
+                findAlertRecord(diastolicRecords, diastolicBloodPressureStrategy));
         if (criticalPressureRecord != null) {
             triggerAlert(bloodPressureAlertFactory.createAlert(patientIdText,
                     "Blood pressure critical threshold alert", criticalPressureRecord.getTimestamp()));
         }
 
-        PatientRecord lowSaturationRecord = findLowSaturationRecord(saturationRecords);
+        PatientRecord lowSaturationRecord = findAlertRecord(saturationRecords, oxygenSaturationStrategy);
         if (lowSaturationRecord != null) {
             triggerAlert(bloodOxygenAlertFactory.createAlert(patientIdText, "Low saturation alert",
                     lowSaturationRecord.getTimestamp()));
@@ -193,20 +201,9 @@ public class AlertGenerator {
         return null;
     }
 
-    private PatientRecord findCriticalThresholdRecord(List<PatientRecord> records, double lowThreshold,
-            double highThreshold) {
+    private PatientRecord findAlertRecord(List<PatientRecord> records, AlertStrategy alertStrategy) {
         for (PatientRecord record : records) {
-            double value = record.getMeasurementValue();
-            if (value < lowThreshold || value > highThreshold) {
-                return record;
-            }
-        }
-        return null;
-    }
-
-    private PatientRecord findLowSaturationRecord(List<PatientRecord> records) {
-        for (PatientRecord record : records) {
-            if (record.getMeasurementValue() < 92.0) {
+            if (alertStrategy.checkAlert(record.getMeasurementValue())) {
                 return record;
             }
         }
@@ -237,12 +234,12 @@ public class AlertGenerator {
         // clinically related event when both low readings occur within the same
         // 10-minute monitoring window.
         for (PatientRecord systolicRecord : systolicRecords) {
-            if (systolicRecord.getMeasurementValue() >= 90.0) {
+            if (!lowSystolicBloodPressureStrategy.checkAlert(systolicRecord.getMeasurementValue())) {
                 continue;
             }
 
             for (PatientRecord saturationRecord : saturationRecords) {
-                if (saturationRecord.getMeasurementValue() >= 92.0) {
+                if (!oxygenSaturationStrategy.checkAlert(saturationRecord.getMeasurementValue())) {
                     continue;
                 }
 
