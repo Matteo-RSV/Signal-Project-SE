@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import com.alerts.Alert;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -14,9 +17,10 @@ import org.java_websocket.handshake.ServerHandshake;
  * Reads live data from the simulator through a WebSocket connection.
  *
  * <p>This reader connects to the simulator, reads each incoming message, parses
- * the message fields, and stores valid data in {@link DataStorage}. The
- * simulator currently sends messages in this order: patient ID, timestamp,
- * label, data value.
+ * the message fields, stores valid data in {@link DataStorage}, and then lets
+ * the existing alert logic read the updated patient data. The simulator
+ * currently sends messages in this order: patient ID, timestamp, label, data
+ * value.
  */
 public class WebSocketDataReader implements DataReader {
     private static final Set<String> SUPPORTED_LABELS = new HashSet<>(Arrays.asList(
@@ -188,6 +192,11 @@ public class WebSocketDataReader implements DataReader {
                 parsedRecord.getMeasurementValue(),
                 parsedRecord.getRecordType(),
                 parsedRecord.getTimestamp());
+
+        // After a valid real-time message is stored, the existing alert logic can
+        // check the latest records for this patient. If some data is still missing,
+        // the alert code simply returns no alerts.
+        printTriggeredAlerts(parsedRecord.getPatientId());
     }
 
     /**
@@ -262,6 +271,13 @@ public class WebSocketDataReader implements DataReader {
             return Double.parseDouble(numericValue);
         } catch (NumberFormatException exception) {
             return null;
+        }
+    }
+
+    private void printTriggeredAlerts(int patientId) {
+        List<Alert> alerts = dataStorage.checkAlertsForPatient(patientId);
+        for (Alert alert : alerts) {
+            System.out.println("Triggered alert: " + alert.getMessage());
         }
     }
 }

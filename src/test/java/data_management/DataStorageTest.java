@@ -1,5 +1,6 @@
 package data_management;
 
+import com.alerts.Alert;
 import com.data_management.DataStorage;
 import com.data_management.Patient;
 import com.data_management.PatientRecord;
@@ -109,5 +110,23 @@ class DataStorageTest {
         assertEquals(2, records.size());
         assertEquals(96.0, records.get(0).getMeasurementValue());
         assertEquals(97.0, records.get(1).getMeasurementValue());
+    }
+
+    @Test
+    void checkAlertsForPatientReturnsTriggeredAlertsFromStoredRealtimeData() {
+        DataStorage storage = DataStorage.getInstance();
+        storage.addPatientData(6, 97.0, "Saturation", 0L);
+        storage.addPatientData(6, 91.0, "Saturation", 5 * 60_000L);
+
+        List<Alert> alerts = storage.checkAlertsForPatient(6);
+
+        assertEquals(2, alerts.size());
+    }
+
+    @Test
+    void checkAlertsForPatientReturnsEmptyListForUnknownPatient() {
+        DataStorage storage = DataStorage.getInstance();
+
+        assertTrue(storage.checkAlertsForPatient(999).isEmpty());
     }
 }

@@ -1,5 +1,6 @@
 package com.data_management;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -7,7 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.alerts.Alert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,5 +89,34 @@ class WebSocketDataReaderTest {
         assertEquals(1, records.size());
         assertEquals("Alert", records.get(0).getRecordType());
         assertEquals(1.0, records.get(0).getMeasurementValue());
+    }
+
+    @Test
+    void handleMessageMakesRealtimeDataAvailableToAlertLogic() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+        DataStorage storage = DataStorage.getInstance();
+
+        reader.setDataStorage(storage);
+        reader.handleMessage("8,1000,Saturation,97.0%");
+        reader.handleMessage("8,301000,Saturation,91.0%");
+
+        Set<String> conditions = storage.checkAlertsForPatient(8).stream()
+                .map(Alert::getCondition)
+                .collect(Collectors.toSet());
+
+        assertTrue(conditions.contains("Low saturation alert"));
+        assertTrue(conditions.contains("Rapid saturation drop alert"));
+    }
+
+    @Test
+    void handleMessageDoesNotCrashWhenDataIsIncompleteForAlertChecks() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+        DataStorage storage = DataStorage.getInstance();
+
+        reader.setDataStorage(storage);
+        reader.handleMessage("9,1000,ECG,0.10");
+
+        List<Alert> alerts = storage.checkAlertsForPatient(9);
+        assertFalse(alerts.stream().anyMatch(alert -> alert.getCondition() == null));
     }
 }

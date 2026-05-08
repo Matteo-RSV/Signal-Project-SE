@@ -94,6 +94,39 @@ public class DataStorage {
     }
 
     /**
+     * Returns one patient from storage.
+     *
+     * <p>This is used when real-time data arrives and the alert logic needs the
+     * latest stored records for one patient.
+     *
+     * @param patientId the patient ID to look up
+     * @return the stored patient, or {@code null} if the patient has no data yet
+     */
+    public synchronized Patient getPatient(int patientId) {
+        return patientMap.get(patientId);
+    }
+
+    /**
+     * Checks alert conditions for one patient using the records currently stored.
+     *
+     * <p>If the patient does not exist yet, or has no useful data, an empty list is
+     * returned so the real-time flow does not crash.
+     *
+     * @param patientId the patient ID to evaluate
+     * @return the alerts currently triggered for that patient
+     */
+    public synchronized List<Alert> checkAlertsForPatient(int patientId) {
+        Patient patient = getPatient(patientId);
+        if (patient == null) {
+            return new ArrayList<>();
+        }
+
+        AlertGenerator alertGenerator = new AlertGenerator(this);
+        alertGenerator.evaluateData(patient);
+        return alertGenerator.getTriggeredAlerts();
+    }
+
+    /**
      * Clears all stored patient data.
      */
     public synchronized void clearData() {
