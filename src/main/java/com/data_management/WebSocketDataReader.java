@@ -12,7 +12,8 @@ import org.java_websocket.handshake.ServerHandshake;
  *
  * <p>This reader does not fully parse and store the incoming messages yet. For
  * now it connects to the simulator and prints each message so the real-time
- * connection can be tested.
+ * connection can be tested. The simulator currently sends messages in this
+ * order: patient ID, timestamp, label, data value.
  */
 public class WebSocketDataReader implements DataReader {
     private final URI serverUri;
@@ -110,7 +111,8 @@ public class WebSocketDataReader implements DataReader {
                 }
 
                 // The storage reference is kept for the next step when messages will
-                // be parsed and saved instead of only being printed.
+                // be split into patient ID, timestamp, label, and data value, then
+                // saved instead of only being printed.
                 if (dataStorage != null) {
                     System.out.println("Received WebSocket message: " + message);
                 } else {

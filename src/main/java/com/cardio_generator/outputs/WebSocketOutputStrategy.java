@@ -12,9 +12,9 @@ import java.net.InetSocketAddress;
  * simulated patient data over a WebSocket connection. A server is started on a
  * specified port, and any connected clients will receive real-time updates.
  *
- * <p>The output data is formatted as a comma-separated string containing the
- * patient ID, timestamp, label, and data value. Each call to the output method
- * sends the generated data to all currently connected clients.
+ * <p>The output data is formatted as a comma-separated string in this order:
+ * patient ID, timestamp, label, data value. Each call to the output method
+ * sends one complete measurement to all currently connected clients.
  */
 public class WebSocketOutputStrategy implements OutputStrategy {
 
@@ -41,8 +41,9 @@ public class WebSocketOutputStrategy implements OutputStrategy {
      * Sends generated patient data to all connected WebSocket clients.
      *
      * <p>The data is formatted as a comma-separated string containing the patient ID,
-     * timestamp, label, and value. This method does not return a value. Its primary
-     * side effect is broadcasting data over the network to connected clients.
+     * timestamp, label, and value in that exact order. This is enough for the
+     * WebSocket reader because it identifies who the data belongs to, what kind
+     * of data it is, when it was created, and the value itself.
      *
      * @param patientId the ID of the patient associated with the generated data
      * @param timestamp the time at which the data was generated, represented as
@@ -53,6 +54,9 @@ public class WebSocketOutputStrategy implements OutputStrategy {
     @Override
     public void output(int patientId, long timestamp, String label, String data) {
 
+        // Example message: 1,1712345678901,ECG,0.42
+        // The same four parts are always sent in the same order so the client can
+        // split the message and read it reliably.
         String message = String.format("%d,%d,%s,%s", patientId, timestamp, label, data);
 
         for (WebSocket conn : server.getConnections()) {
