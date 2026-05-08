@@ -15,6 +15,10 @@ import com.alerts.AlertGenerator;
  * system.
  * This class serves as a repository for all patient records, organized by
  * patient IDs.
+ *
+ * <p>For Part 5, the same storage is used by both file input and live WebSocket
+ * input, so the update methods are synchronized and reuse existing patient
+ * objects instead of replacing them.
  */
 public class DataStorage {
     private static DataStorage instance;
@@ -54,12 +58,12 @@ public class DataStorage {
      *                         milliseconds since the Unix epoch
      */
     public synchronized void addPatientData(int patientId, double measurementValue, String recordType, long timestamp) {
-        // Real-time messages may arrive one after another, so the same patient
-        // should be reused and only new records should be appended.
+        // Real-time messages may arrive one after another, so reuse the same
+        // patient and keep adding new records to that patient.
         Patient patient = patientMap.computeIfAbsent(patientId, Patient::new);
 
-        // If the exact same message arrives again, keep the old record and skip
-        // adding a duplicate.
+        // If the exact same live message arrives again, skip it so the stored
+        // history does not fill up with repeated duplicates.
         patient.addRecordIfNotDuplicate(measurementValue, recordType, timestamp);
     }
 
@@ -121,6 +125,9 @@ public class DataStorage {
             return new ArrayList<>();
         }
 
+        // Reuse the same alert logic that already worked for file-based data.
+        // The only difference is that the patient records may now be arriving
+        // one message at a time from the WebSocket reader.
         AlertGenerator alertGenerator = new AlertGenerator(this);
         alertGenerator.evaluateData(patient);
         return alertGenerator.getTriggeredAlerts();

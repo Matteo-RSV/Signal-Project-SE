@@ -122,10 +122,12 @@ public class WebSocketOutputStrategy implements OutputStrategy {
          * @param conn the WebSocket connection that sent the message
          * @param message the message received from the client
          */
-        @Override
-        public void onMessage(WebSocket conn, String message) {
-            // Not used in this context
-        }
+            @Override
+            public void onMessage(WebSocket conn, String message) {
+                // The simulator only sends data out, so incoming client messages
+                // are ignored here.
+                // Not used in this context
+            }
 
         /**
          * Called when an error occurs in the WebSocket server.

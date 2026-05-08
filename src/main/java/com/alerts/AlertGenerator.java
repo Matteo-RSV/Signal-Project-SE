@@ -68,7 +68,9 @@ public class AlertGenerator {
      *
      * <p>If the patient's measurements meet a predefined alert condition, this
      * method is expected to trigger an alert through
-     * {@link #triggerAlert(Alert)}.
+     * {@link #triggerAlert(Alert)}. The same method is used for both Part 4 file
+     * data and Part 5 live WebSocket data because both end up stored as
+     * {@link PatientRecord} objects.
      *
      * @param patient the patient whose data is being checked for alert conditions
      */

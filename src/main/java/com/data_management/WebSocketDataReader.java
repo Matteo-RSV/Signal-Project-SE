@@ -47,6 +47,12 @@ public class WebSocketDataReader implements DataReader {
         this.serverUri = serverUri;
     }
 
+    /**
+     * Stores the shared data storage used by the live reader.
+     *
+     * <p>This is set before the connection starts so received messages can be
+     * saved as soon as they arrive.
+     */
     void setDataStorage(DataStorage dataStorage) {
         this.dataStorage = dataStorage;
     }
@@ -117,6 +123,8 @@ public class WebSocketDataReader implements DataReader {
              */
             @Override
             public void onOpen(ServerHandshake handshake) {
+                // A simple connection message helps confirm that the live reader
+                // reached the simulator successfully.
                 System.out.println("Connected to WebSocket server: " + serverUri);
             }
 
@@ -132,6 +140,8 @@ public class WebSocketDataReader implements DataReader {
                 }
 
                 if (dataStorage != null) {
+                    // Keep the real-time flow in one place: read the text message,
+                    // parse it, store it, and then let alerts check the new data.
                     handleMessage(message);
                 } else {
                     System.out.println("Received WebSocket message without storage: " + message);
@@ -148,6 +158,9 @@ public class WebSocketDataReader implements DataReader {
             @Override
             public void onClose(int code, String reason, boolean remote) {
                 running = false;
+                // The connection can close because the reader stopped, the server
+                // stopped, or the network failed. In all cases the reader should
+                // end cleanly instead of crashing.
                 System.out.println("WebSocket connection closed. Reason: " + reason);
             }
 
@@ -159,6 +172,8 @@ public class WebSocketDataReader implements DataReader {
             @Override
             public void onError(Exception exception) {
                 String message = exception == null ? "Unknown WebSocket error" : exception.getMessage();
+                // A warning is enough here because the reader should stay stable
+                // even when one connection attempt fails.
                 System.err.println("WebSocket reader error: " + message);
             }
         };
@@ -185,17 +200,17 @@ public class WebSocketDataReader implements DataReader {
             return;
         }
 
-        // DataStorage handles repeated real-time messages by reusing the patient
-        // and skipping exact duplicate records.
+        // DataStorage reuses the same patient object and skips exact duplicate
+        // messages, so live updates can be added one by one safely.
         dataStorage.addPatientData(
                 parsedRecord.getPatientId(),
                 parsedRecord.getMeasurementValue(),
                 parsedRecord.getRecordType(),
                 parsedRecord.getTimestamp());
 
-        // After a valid real-time message is stored, the existing alert logic can
-        // check the latest records for this patient. If some data is still missing,
-        // the alert code simply returns no alerts.
+        // After a valid live update is stored, check alerts for just that patient.
+        // If the patient does not have enough data yet, the alert logic simply
+        // returns no alerts.
         printTriggeredAlerts(parsedRecord.getPatientId());
     }
 
@@ -214,8 +229,8 @@ public class WebSocketDataReader implements DataReader {
             return null;
         }
 
-        // Split into exactly four parts so the reader always expects:
-        // patient ID, timestamp, label, data value.
+        // The simulator sends four comma-separated parts in a fixed order:
+        // patient ID, timestamp, label, and data value.
         String[] parts = message.split(",", 4);
         if (parts.length != 4) {
             System.err.println("Skipping invalid WebSocket message: " + message);
@@ -256,6 +271,8 @@ public class WebSocketDataReader implements DataReader {
 
     private Double parseMeasurementValue(String label, String data) {
         if ("Alert".equals(label)) {
+            // Alert messages use words instead of numbers, so they are mapped to
+            // numeric values that fit the existing PatientRecord design.
             if ("triggered".equalsIgnoreCase(data)) {
                 return 1.0;
             }
@@ -265,6 +282,8 @@ public class WebSocketDataReader implements DataReader {
             return null;
         }
 
+        // Saturation values arrive with a percent sign, but the stored record
+        // still needs one numeric measurement value.
         String numericValue = data.endsWith("%") ? data.substring(0, data.length() - 1) : data;
 
         try {
@@ -277,6 +296,8 @@ public class WebSocketDataReader implements DataReader {
     private void printTriggeredAlerts(int patientId) {
         List<Alert> alerts = dataStorage.checkAlertsForPatient(patientId);
         for (Alert alert : alerts) {
+            // Printing alerts here gives simple live feedback without changing the
+            // older alert classes.
             System.out.println("Triggered alert: " + alert.getMessage());
         }
     }

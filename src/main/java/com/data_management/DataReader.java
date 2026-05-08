@@ -2,6 +2,13 @@ package com.data_management;
 
 import java.io.IOException;
 
+/**
+ * Simple reader interface for both old file input and new live input.
+ *
+ * <p>Part 4 used a file reader that worked once and finished. Part 5 adds a
+ * WebSocket reader that may stay connected for longer, so the interface now
+ * uses start/stop instead of a single read method.
+ */
 public interface DataReader {
     /**
      * Starts reading data and sending it into the given storage.
