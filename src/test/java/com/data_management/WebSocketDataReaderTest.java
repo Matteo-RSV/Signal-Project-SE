@@ -49,6 +49,19 @@ class WebSocketDataReaderTest {
     }
 
     @Test
+    void parseMessageReadsValidBloodPressureMessage() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+
+        PatientRecord record = reader.parseMessage("10,5000,SystolicPressure,120");
+
+        assertNotNull(record);
+        assertEquals(10, record.getPatientId());
+        assertEquals(5000L, record.getTimestamp());
+        assertEquals("SystolicPressure", record.getRecordType());
+        assertEquals(120.0, record.getMeasurementValue());
+    }
+
+    @Test
     void parseMessageReturnsNullForInvalidMessages() {
         WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
 
@@ -58,6 +71,22 @@ class WebSocketDataReaderTest {
         assertNull(reader.parseMessage("one,1000,ECG,0.42"));
         assertNull(reader.parseMessage("1,1000,UnknownType,0.42"));
         assertNull(reader.parseMessage("1,1000,Alert,maybe"));
+    }
+
+    @Test
+    void parseMessageReturnsNullForWrongValueFormat() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+
+        assertNull(reader.parseMessage("1,1000,ECG,not-a-number"));
+        assertNull(reader.parseMessage("1,1000,Saturation,ninety-five"));
+    }
+
+    @Test
+    void parseMessageReturnsNullForCorruptedText() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+
+        assertNull(reader.parseMessage("hello world"));
+        assertNull(reader.parseMessage("random,text,that,does,not,fit"));
     }
 
     @Test

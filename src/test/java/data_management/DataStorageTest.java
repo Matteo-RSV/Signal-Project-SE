@@ -99,6 +99,31 @@ class DataStorageTest {
     }
 
     @Test
+    void storesNewPatientData() {
+        DataStorage storage = DataStorage.getInstance();
+
+        storage.addPatientData(3, 98.0, "Saturation", 500L);
+
+        List<PatientRecord> records = storage.getRecords(3, 0L, 1_000L);
+        assertEquals(1, records.size());
+        assertEquals(98.0, records.get(0).getMeasurementValue());
+        assertEquals("Saturation", records.get(0).getRecordType());
+    }
+
+    @Test
+    void updatesExistingPatientData() {
+        DataStorage storage = DataStorage.getInstance();
+        storage.addPatientData(4, 0.15, "ECG", 100L);
+        storage.addPatientData(4, 0.30, "ECG", 200L);
+
+        List<PatientRecord> records = storage.getRecords(4, 0L, 1_000L);
+
+        assertEquals(2, records.size());
+        assertEquals(0.15, records.get(0).getMeasurementValue());
+        assertEquals(0.30, records.get(1).getMeasurementValue());
+    }
+
+    @Test
     void dataStorageSkipsDuplicateRealTimeMessages() {
         DataStorage storage = DataStorage.getInstance();
         storage.addPatientData(5, 96.0, "Saturation", 2_000L);
@@ -110,6 +135,21 @@ class DataStorageTest {
         assertEquals(2, records.size());
         assertEquals(96.0, records.get(0).getMeasurementValue());
         assertEquals(97.0, records.get(1).getMeasurementValue());
+    }
+
+    @Test
+    void storesMultipleMeasurementsForSamePatient() {
+        DataStorage storage = DataStorage.getInstance();
+        storage.addPatientData(8, 97.0, "Saturation", 1_000L);
+        storage.addPatientData(8, 120.0, "SystolicPressure", 2_000L);
+        storage.addPatientData(8, 0.25, "ECG", 3_000L);
+
+        List<PatientRecord> records = storage.getRecords(8, 0L, 10_000L);
+
+        assertEquals(3, records.size());
+        assertEquals("Saturation", records.get(0).getRecordType());
+        assertEquals("SystolicPressure", records.get(1).getRecordType());
+        assertEquals("ECG", records.get(2).getRecordType());
     }
 
     @Test
