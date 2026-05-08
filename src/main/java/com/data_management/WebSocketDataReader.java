@@ -2,6 +2,9 @@ package com.data_management;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.java_websocket.client.WebSocketClient;
@@ -10,12 +13,22 @@ import org.java_websocket.handshake.ServerHandshake;
 /**
  * Reads live data from the simulator through a WebSocket connection.
  *
- * <p>This reader does not fully parse and store the incoming messages yet. For
- * now it connects to the simulator and prints each message so the real-time
- * connection can be tested. The simulator currently sends messages in this
- * order: patient ID, timestamp, label, data value.
+ * <p>This reader connects to the simulator, reads each incoming message, parses
+ * the message fields, and stores valid data in {@link DataStorage}. The
+ * simulator currently sends messages in this order: patient ID, timestamp,
+ * label, data value.
  */
 public class WebSocketDataReader implements DataReader {
+    private static final Set<String> SUPPORTED_LABELS = new HashSet<>(Arrays.asList(
+            "ECG",
+            "Saturation",
+            "SystolicPressure",
+            "DiastolicPressure",
+            "Cholesterol",
+            "WhiteBloodCells",
+            "RedBloodCells",
+            "Alert"));
+
     private final URI serverUri;
     private WebSocketClient client;
     private boolean running;
@@ -30,6 +43,10 @@ public class WebSocketDataReader implements DataReader {
         this.serverUri = serverUri;
     }
 
+    void setDataStorage(DataStorage dataStorage) {
+        this.dataStorage = dataStorage;
+    }
+
     /**
      * Starts the WebSocket reader.
      *
@@ -41,7 +58,7 @@ public class WebSocketDataReader implements DataReader {
      */
     @Override
     public void start(DataStorage dataStorage) throws IOException {
-        this.dataStorage = dataStorage;
+        setDataStorage(dataStorage);
         this.client = createClient();
         this.running = true;
 
@@ -110,11 +127,8 @@ public class WebSocketDataReader implements DataReader {
                     return;
                 }
 
-                // The storage reference is kept for the next step when messages will
-                // be split into patient ID, timestamp, label, and data value, then
-                // saved instead of only being printed.
                 if (dataStorage != null) {
-                    System.out.println("Received WebSocket message: " + message);
+                    handleMessage(message);
                 } else {
                     System.out.println("Received WebSocket message without storage: " + message);
                 }
@@ -144,5 +158,108 @@ public class WebSocketDataReader implements DataReader {
                 System.err.println("WebSocket reader error: " + message);
             }
         };
+    }
+
+    /**
+     * Reads one message from the WebSocket connection and stores it when valid.
+     *
+     * <p>The message is split into four comma-separated parts. Invalid messages are
+     * skipped after printing a warning so the reader does not crash.
+     *
+     * @param message the incoming WebSocket message
+     */
+    void handleMessage(String message) {
+        System.out.println("Received WebSocket message: " + message);
+
+        if (dataStorage == null) {
+            System.err.println("Skipping WebSocket message because no data storage is set.");
+            return;
+        }
+
+        PatientRecord parsedRecord = parseMessage(message);
+        if (parsedRecord == null) {
+            return;
+        }
+
+        dataStorage.addPatientData(
+                parsedRecord.getPatientId(),
+                parsedRecord.getMeasurementValue(),
+                parsedRecord.getRecordType(),
+                parsedRecord.getTimestamp());
+    }
+
+    /**
+     * Parses one WebSocket message into a patient record.
+     *
+     * <p>The expected format is: patientId,timestamp,label,data. The data part is
+     * converted into a numeric value so it can be stored in {@link DataStorage}.
+     *
+     * @param message the incoming message text
+     * @return a parsed record, or {@code null} when the message is invalid
+     */
+    PatientRecord parseMessage(String message) {
+        if (message == null || message.trim().isEmpty()) {
+            System.err.println("Skipping empty WebSocket message.");
+            return null;
+        }
+
+        // Split into exactly four parts so the reader always expects:
+        // patient ID, timestamp, label, data value.
+        String[] parts = message.split(",", 4);
+        if (parts.length != 4) {
+            System.err.println("Skipping invalid WebSocket message: " + message);
+            return null;
+        }
+
+        String patientIdText = parts[0].trim();
+        String timestampText = parts[1].trim();
+        String label = parts[2].trim();
+        String data = parts[3].trim();
+
+        if (label.isEmpty() || data.isEmpty()) {
+            System.err.println("Skipping WebSocket message with missing fields: " + message);
+            return null;
+        }
+
+        if (!SUPPORTED_LABELS.contains(label)) {
+            System.err.println("Skipping WebSocket message with unknown measurement type: " + message);
+            return null;
+        }
+
+        try {
+            int patientId = Integer.parseInt(patientIdText);
+            long timestamp = Long.parseLong(timestampText);
+
+            Double measurementValue = parseMeasurementValue(label, data);
+            if (measurementValue == null) {
+                System.err.println("Skipping WebSocket message with invalid data value: " + message);
+                return null;
+            }
+
+            return new PatientRecord(patientId, measurementValue, label, timestamp);
+        } catch (NumberFormatException exception) {
+            System.err.println("Skipping WebSocket message with invalid number format: " + message);
+            return null;
+        }
+    }
+
+    private Double parseMeasurementValue(String label, String data) {
+        if ("Alert".equals(label)) {
+            if ("triggered".equalsIgnoreCase(data)) {
+                return 1.0;
+            }
+            if ("resolved".equalsIgnoreCase(data)) {
+                return 0.0;
+            }
+            return null;
+        }
+
+        String numericValue = data.endsWith("%") ? data.substring(0, data.length() - 1) : data;
+
+        try {
+            return Double.parseDouble(numericValue);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 }
