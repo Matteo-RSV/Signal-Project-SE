@@ -96,4 +96,18 @@ class DataStorageTest {
 
         assertTrue(storage.getRecords(999, 0L, 1_000L).isEmpty());
     }
+
+    @Test
+    void dataStorageSkipsDuplicateRealTimeMessages() {
+        DataStorage storage = DataStorage.getInstance();
+        storage.addPatientData(5, 96.0, "Saturation", 2_000L);
+        storage.addPatientData(5, 96.0, "Saturation", 2_000L);
+        storage.addPatientData(5, 97.0, "Saturation", 3_000L);
+
+        List<PatientRecord> records = storage.getRecords(5, 0L, 10_000L);
+
+        assertEquals(2, records.size());
+        assertEquals(96.0, records.get(0).getMeasurementValue());
+        assertEquals(97.0, records.get(1).getMeasurementValue());
+    }
 }

@@ -71,4 +71,19 @@ class WebSocketDataReaderTest {
         assertEquals(120.0, records.get(0).getMeasurementValue());
         assertTrue(storage.getRecords(99, 0L, 10_000L).isEmpty());
     }
+
+    @Test
+    void handleMessageSkipsDuplicateRealTimeMessages() {
+        WebSocketDataReader reader = new WebSocketDataReader(URI.create("ws://localhost:8080"));
+        DataStorage storage = DataStorage.getInstance();
+
+        reader.setDataStorage(storage);
+        reader.handleMessage("7,7000,Alert,triggered");
+        reader.handleMessage("7,7000,Alert,triggered");
+
+        List<PatientRecord> records = storage.getRecords(7, 0L, 10_000L);
+        assertEquals(1, records.size());
+        assertEquals("Alert", records.get(0).getRecordType());
+        assertEquals(1.0, records.get(0).getMeasurementValue());
+    }
 }

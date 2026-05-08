@@ -181,6 +181,8 @@ public class WebSocketDataReader implements DataReader {
             return;
         }
 
+        // DataStorage handles repeated real-time messages by reusing the patient
+        // and skipping exact duplicate records.
         dataStorage.addPatientData(
                 parsedRecord.getPatientId(),
                 parsedRecord.getMeasurementValue(),
