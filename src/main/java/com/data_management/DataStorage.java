@@ -118,11 +118,13 @@ public class DataStorage {
         DataReader reader = new FileDataReader(inputDirectory);
 
         try {
-            reader.readData(storage);
+            reader.start(storage);
         } catch (IOException exception) {
             System.err.println("Unable to read simulator output from '" + inputDirectory + "': "
                     + exception.getMessage());
             return;
+        } finally {
+            reader.stop();
         }
 
         List<Patient> patients = storage.getAllPatients();

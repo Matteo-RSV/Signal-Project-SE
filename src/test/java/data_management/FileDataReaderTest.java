@@ -29,7 +29,7 @@ class FileDataReaderTest {
     }
 
     @Test
-    void readDataParsesValidFilesAndIgnoresMalformedLines() throws IOException {
+    void startParsesValidFilesAndIgnoresMalformedLines() throws IOException {
         Files.writeString(tempDirectory.resolve("SystolicPressure.txt"),
                 "Patient ID: 1, Timestamp: 1000, Label: SystolicPressure, Data: 118\n"
                         + "This line should be ignored\n");
@@ -44,7 +44,7 @@ class FileDataReaderTest {
         DataStorage storage = DataStorage.getInstance();
         FileDataReader reader = new FileDataReader(tempDirectory.toString());
 
-        reader.readData(storage);
+        reader.start(storage);
 
         List<PatientRecord> patientOneRecords = storage.getRecords(1, 0L, 10_000L);
         patientOneRecords.sort(Comparator.comparingLong(PatientRecord::getTimestamp));
@@ -64,20 +64,20 @@ class FileDataReaderTest {
     }
 
     @Test
-    void readDataLeavesStorageEmptyWhenDirectoryHasNoInputFiles() throws IOException {
+    void startLeavesStorageEmptyWhenDirectoryHasNoInputFiles() throws IOException {
         DataStorage storage = DataStorage.getInstance();
         FileDataReader reader = new FileDataReader(tempDirectory.toString());
 
-        reader.readData(storage);
+        reader.start(storage);
 
         assertTrue(storage.getAllPatients().isEmpty());
     }
 
     @Test
-    void readDataThrowsWhenDirectoryDoesNotExist() {
+    void startThrowsWhenDirectoryDoesNotExist() {
         Path missingDirectory = tempDirectory.resolve("missing");
         FileDataReader reader = new FileDataReader(missingDirectory.toString());
 
-        assertThrows(IOException.class, () -> reader.readData(DataStorage.getInstance()));
+        assertThrows(IOException.class, () -> reader.start(DataStorage.getInstance()));
     }
 }

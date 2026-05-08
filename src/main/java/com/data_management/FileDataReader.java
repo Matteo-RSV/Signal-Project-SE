@@ -17,6 +17,7 @@ public class FileDataReader implements DataReader {
             "Patient ID: (\\d+), Timestamp: (\\d+), Label: ([^,]+), Data: (.+)");
 
     private final Path inputDirectory;
+    private boolean running;
 
     /**
      * Creates a reader for simulator output files stored in a directory.
@@ -28,24 +29,52 @@ public class FileDataReader implements DataReader {
     }
 
     /**
-     * Reads each output file in the configured directory and stores valid records.
+     * Starts the file reader.
+     *
+     * <p>This still does the old Part 4 behavior. It reads the input files one
+     * time and stores the parsed records. The method is named {@code start} so it
+     * matches future streaming readers that may stay active for longer.
      *
      * @param dataStorage the storage where parsed data is written
      * @throws IOException if the directory cannot be read
      */
     @Override
-    public void readData(DataStorage dataStorage) throws IOException {
+    public void start(DataStorage dataStorage) throws IOException {
+        running = true;
+
         if (!Files.isDirectory(inputDirectory)) {
             throw new IOException("Input directory does not exist: " + inputDirectory);
         }
 
         try (DirectoryStream<Path> files = Files.newDirectoryStream(inputDirectory, "*.txt")) {
             for (Path file : files) {
+                if (!running) {
+                    break;
+                }
+
                 for (String line : Files.readAllLines(file)) {
+                    if (!running) {
+                        break;
+                    }
+
                     parseLine(line, dataStorage);
                 }
             }
         }
+
+        running = false;
+    }
+
+    /**
+     * Stops the file reader.
+     *
+     * <p>The file reader only reads once, so stopping it just marks the reader as
+     * no longer running. Future streaming readers can use this method to stop a
+     * long-running connection.
+     */
+    @Override
+    public void stop() {
+        running = false;
     }
 
     private void parseLine(String line, DataStorage dataStorage) {

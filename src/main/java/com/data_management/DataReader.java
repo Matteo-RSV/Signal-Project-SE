@@ -4,10 +4,23 @@ import java.io.IOException;
 
 public interface DataReader {
     /**
-     * Reads data from a specified source and stores it in the data storage.
-     * 
+     * Starts reading data and sending it into the given storage.
+     *
+     * <p>This start/stop shape works for both old one-time readers and future
+     * streaming readers. A file reader can read once inside {@code start(...)},
+     * while a WebSocket reader can keep running until {@link #stop()} is called.
+     *
      * @param dataStorage the storage where data will be stored
-     * @throws IOException if there is an error reading the data
+     * @throws IOException if there is an error reading from the source
      */
-    void readData(DataStorage dataStorage) throws IOException;
+    void start(DataStorage dataStorage) throws IOException;
+
+    /**
+     * Stops the reader.
+     *
+     * <p>For the file reader this can stay simple because the work finishes after
+     * one pass. A future streaming reader can use this to close its connection and
+     * stop receiving data.
+     */
+    void stop();
 }
