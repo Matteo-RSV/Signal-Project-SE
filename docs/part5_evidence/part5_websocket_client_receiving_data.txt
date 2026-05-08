@@ -1,0 +1,24 @@
+Client stdout:
+Connected to WebSocket server: ws://localhost:8080
+WebSocket reader is running for 10 seconds.
+Received WebSocket message: 1,1778240318833,ECG,0.28723606568824284
+Received WebSocket message: 1,1778240318833,Saturation,98.0%
+Received WebSocket message: 1,1778240319831,ECG,-0.5812799311076811
+Received WebSocket message: 1,1778240319847,Saturation,97.0%
+Received WebSocket message: 1,1778240320841,Saturation,97.0%
+Received WebSocket message: 1,1778240320841,ECG,-0.07206926076861396
+Received WebSocket message: 1,1778240321841,ECG,-0.3717479504188632
+Received WebSocket message: 1,1778240321841,Saturation,97.0%
+Received WebSocket message: 1,1778240322839,Saturation,96.0%
+Received WebSocket message: 1,1778240322839,ECG,-0.21629052107630953
+Received WebSocket message: 1,1778240323836,ECG,-0.3141526914194875
+Received WebSocket message: 1,1778240323838,Saturation,97.0%
+Received WebSocket message: 1,1778240324837,Saturation,97.0%
+Received WebSocket message: 1,1778240324837,ECG,-0.4149011771578025
+Received WebSocket message: 1,1778240325835,ECG,-0.09537587612817074
+Received WebSocket message: 1,1778240325835,Saturation,96.0%
+
+Client stderr:
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.

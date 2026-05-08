@@ -1,0 +1,22 @@
+Skipping empty WebSocket message.
+Skipping empty WebSocket message.
+Skipping invalid WebSocket message: 1,1000,ECG
+Skipping WebSocket message with invalid number format: one,1000,ECG,0.42
+Skipping WebSocket message with unknown measurement type: 1,1000,UnknownType,0.42
+Skipping WebSocket message with invalid data value: 1,1000,Alert,maybe
+Skipping invalid WebSocket message: hello world
+Skipping WebSocket message with unknown measurement type: random,text,that,does,not,fit
+Skipping invalid WebSocket message: 4,5000,broken
+Skipping WebSocket message with invalid data value: 1,1000,ECG,not-a-number
+Skipping WebSocket message with invalid data value: 1,1000,Saturation,ninety-five
+Skipping WebSocket message with missing fields: 1,1000,Alert,
+Skipping WebSocket message with missing fields: 1,1000,,0.42
+Skipping WebSocket message with missing fields: 15,1001,,0.50
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+WebSocket reader error: Connection refused: connect
+Could not connect to WebSocket server at ws://127.0.0.1:1
+Skipping WebSocket message with invalid number format: ,1000,ECG,0.42
+Skipping WebSocket message with missing fields: 1,1000,ECG,
+Skipping invalid WebSocket message: broken message

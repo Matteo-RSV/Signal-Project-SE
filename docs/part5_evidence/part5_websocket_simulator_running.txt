@@ -1,0 +1,10 @@
+Simulator stdout:
+WebSocket server created on port: 8080, listening for connections...
+WebSocket output will be on port: 8080
+Server started successfully
+New connection: /127.0.0.1:60293
+
+Simulator stderr:
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
